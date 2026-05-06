@@ -1,0 +1,1 @@
+This session ran inside a Docker container
