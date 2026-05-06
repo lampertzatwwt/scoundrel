@@ -1,8 +1,10 @@
-<!DOCTYPE html>
+�<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Scoundrel — a solo dungeon-crawl card game by Zach Gage &amp; Kurt Bieg. Survive the entire deck to escape alive.">
+<meta name="author" content="Zach Gage &amp; Kurt Bieg">
 <title>Scoundrel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
@@ -1137,7 +1139,7 @@ let hoveredMesh = null;
 canvas.addEventListener('pointerdown', (e) => {
   if (state.gameOver) return;
   pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
-  pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
+  pointer.y = -(e.clientY / window.innerHeig'ht) * 2 + 1;
   raycaster.setFromCamera(pointer, camera);
   const hits = raycaster.intersectObjects(cardMeshes);
   if (hits.length > 0) {
