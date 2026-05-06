@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scoundrel</title>
+<title>Scoundrel — A Dungeon of Cards</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.7/dist/gsap.min.js"></script>
@@ -117,6 +117,31 @@
     font-family: 'Cinzel', serif;
     font-size: 1.3rem; font-weight: 700;
     color: var(--text-dim);
+  }
+
+  /* Rooms Cleared */
+  #hud-rooms {
+    position: absolute; top: 90px; right: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 14px;
+    text-align: center;
+    min-width: 68px;
+  }
+  .rooms-label {
+    font-size: 0.55rem; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--text-dim);
+  }
+  .rooms-value {
+    font-family: 'Cinzel', serif;
+    font-size: 1.3rem; font-weight: 700;
+    color: var(--gold-dim);
+    transition: color 0.3s;
+  }
+  #hud-rooms.just-cleared .rooms-value {
+    color: var(--gold);
+    text-shadow: 0 0 10px rgba(201,168,76,0.5);
   }
 
   /* Room Label */
@@ -255,7 +280,14 @@
   }
   .overlay .result-msg {
     font-size: 1.1rem; color: var(--text-dim);
-    margin-bottom: 24px;
+    margin-bottom: 8px;
+  }
+  .overlay .result-rooms {
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem; letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold-dim);
+    margin-bottom: 20px;
   }
   .overlay .btn { font-size: 1rem; padding: 12px 32px; }
 
@@ -373,6 +405,10 @@
     #hud-deck { top: 8px; right: 8px; padding: 4px 8px; }
     .deck-label { font-size: 0.45rem; }
     .deck-value { font-size: 0.9rem; }
+    /* Rooms — below deck on mobile */
+    #hud-rooms { top: 60px; right: 8px; padding: 4px 8px; min-width: auto; }
+    .rooms-label { font-size: 0.45rem; }
+    .rooms-value { font-size: 0.9rem; }
     /* Help — beside deck */
     #hud-help { top: 8px; right: 52px; width: 26px; height: 26px; font-size: 0.75rem; }
     /* Room bar — centered below top HUD */
@@ -424,6 +460,12 @@
   <div id="hud-deck">
     <div class="deck-label">Deck</div>
     <div class="deck-value" id="deck-value">40</div>
+  </div>
+
+  <!-- Rooms Cleared -->
+  <div id="hud-rooms">
+    <div class="rooms-label">Rooms</div>
+    <div class="rooms-value" id="rooms-value">0</div>
   </div>
 
   <!-- Room Label + Flee -->
@@ -513,6 +555,7 @@ function initGame() {
     cardsPlayedThisRoom: 0,
     potionUsedThisRoom: false,
     lastRanAway: false,
+    roomsCleared: 0,
     log: [{ text: 'You descend into the dungeon...', cls: 'info' }],
     gameOver: false,
     won: false,
@@ -615,6 +658,8 @@ function playCard(index, action) {
 
   if (state.cardsPlayedThisRoom >= 3 && state.room.length <= 1 && !state.gameOver) {
     state.lastRanAway = false;
+    state.roomsCleared++;
+    flashRoomsCleared();
     if (state.deck.length === 0 && state.room.length <= 1) {
       // final cards
     }
@@ -1177,6 +1222,8 @@ const healthNumber = document.getElementById('health-number');
 const hudHealth = document.getElementById('hud-health');
 const weaponValue = document.getElementById('weapon-value');
 const deckValue = document.getElementById('deck-value');
+const roomsValue = document.getElementById('rooms-value');
+const hudRooms = document.getElementById('hud-rooms');
 const hudRoomLabel = document.getElementById('hud-room-label');
 const fleeBtn = document.getElementById('flee-btn');
 const hudActions = document.getElementById('hud-actions');
@@ -1185,6 +1232,11 @@ const overlayContainer = document.getElementById('overlay-container');
 const damageFlash = document.getElementById('damage-flash');
 
 const ARC_CIRCUMFERENCE = 2 * Math.PI * 17; // ~106.81
+
+function flashRoomsCleared() {
+  hudRooms.classList.add('just-cleared');
+  setTimeout(() => hudRooms.classList.remove('just-cleared'), 1200);
+}
 
 function updateHUD() {
   const s = state;
@@ -1214,6 +1266,9 @@ function updateHUD() {
 
   // Deck
   deckValue.textContent = s.deck.length;
+
+  // Rooms cleared
+  roomsValue.textContent = s.roomsCleared;
 
   // Room label
   const remaining = Math.max(0, 3 - s.cardsPlayedThisRoom);
@@ -1278,12 +1333,16 @@ function updateLog() {
 
 function updateOverlays() {
   if (state.gameOver) {
+    const roomsText = state.roomsCleared === 1
+      ? '1 room cleared'
+      : `${state.roomsCleared} rooms cleared`;
     overlayContainer.innerHTML = `
       <div class="overlay">
         <h2 style="color: ${state.won ? 'var(--gold)' : 'var(--red)'}">
           ${state.won ? 'Victory' : 'Defeated'}
         </h2>
         <div class="result-msg">${state.won ? `You escaped the dungeon with ${state.health} HP!` : 'The dungeon has claimed another soul.'}</div>
+        <div class="result-rooms">${roomsText}</div>
         <button class="btn" onclick="window._startGame()">Play Again</button>
       </div>`;
   } else if (showHelp) {
