@@ -228,6 +228,67 @@
     box-shadow: 0 0 12px rgba(201,168,76,0.2);
   }
 
+  /* ── Seed Badge ── */
+  #hud-seed {
+    position: absolute; top: 118px; right: 20px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  #seed-badge {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 10px;
+    text-align: center;
+    min-width: 90px;
+    line-height: 1.2;
+  }
+  .seed-label {
+    font-size: 0.5rem; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--text-dim);
+    display: block;
+  }
+  .seed-value {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem; font-weight: 700;
+    color: var(--gold-dim);
+    letter-spacing: 0.05em;
+  }
+  #seed-share-btn {
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--gold-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(8px);
+    flex-shrink: 0;
+    font-size: 0.9rem;
+  }
+  #seed-share-btn:hover {
+    border-color: var(--gold); color: var(--gold);
+    box-shadow: 0 0 12px rgba(201,168,76,0.2);
+  }
+  /* Copied tooltip */
+  #seed-share-btn .copied-tooltip {
+    display: none;
+    position: absolute;
+    top: -28px; right: 0;
+    background: var(--surface);
+    border: 1px solid var(--gold-dim);
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.55rem; letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--gold);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  #seed-share-btn.show-copied { position: relative; }
+  #seed-share-btn.show-copied .copied-tooltip { display: block; }
+
   /* Damage Flash */
   #damage-flash {
     position: fixed; inset: 0; z-index: 5;
@@ -255,9 +316,27 @@
   }
   .overlay .result-msg {
     font-size: 1.1rem; color: var(--text-dim);
-    margin-bottom: 24px;
+    margin-bottom: 8px;
+  }
+  .overlay .seed-info {
+    font-size: 0.8rem; color: var(--gold-dim);
+    font-family: 'Cinzel', serif;
+    letter-spacing: 0.1em;
+    margin-bottom: 22px;
   }
   .overlay .btn { font-size: 1rem; padding: 12px 32px; }
+  .overlay-actions {
+    display: flex; flex-wrap: wrap; gap: 10px;
+    justify-content: center;
+  }
+  .btn-share {
+    border-color: var(--gold-dim) !important;
+    color: var(--gold) !important;
+  }
+  .btn-share:hover:not(:disabled) {
+    border-color: var(--gold) !important;
+    box-shadow: 0 0 15px rgba(201,168,76,0.2) !important;
+  }
 
   /* Help Modal */
   .help-overlay {
@@ -375,6 +454,12 @@
     .deck-value { font-size: 0.9rem; }
     /* Help — beside deck */
     #hud-help { top: 8px; right: 52px; width: 26px; height: 26px; font-size: 0.75rem; }
+    /* Seed badge — below deck */
+    #hud-seed { top: 64px; right: 8px; gap: 4px; }
+    #seed-badge { min-width: auto; padding: 4px 8px; }
+    .seed-label { font-size: 0.4rem; }
+    .seed-value { font-size: 0.65rem; }
+    #seed-share-btn { width: 26px; height: 26px; font-size: 0.75rem; }
     /* Room bar — centered below top HUD */
     #hud-room-bar {
       top: auto; bottom: auto;
@@ -435,6 +520,18 @@
   <!-- Help -->
   <button id="hud-help" title="How to Play">?</button>
 
+  <!-- Seed Badge + Share Button -->
+  <div id="hud-seed">
+    <div id="seed-badge">
+      <span class="seed-label">Seed</span>
+      <span class="seed-value" id="seed-display">—</span>
+    </div>
+    <button id="seed-share-btn" title="Copy shareable link">
+      <span class="copied-tooltip">Copied!</span>
+      &#x2398;
+    </button>
+  </div>
+
   <!-- Actions -->
   <div id="hud-actions"></div>
 
@@ -463,7 +560,51 @@
 <script type="module">
 import * as THREE from 'three';
 
-// ─── GAME ENGINE (preserved) ───
+// ─── SEEDED PRNG (Mulberry32) ─────────────────────────────────────────────────
+// A fast, high-quality 32-bit PRNG. Given the same seed it always produces the
+// exact same sequence, which is what makes shareable links possible.
+function mulberry32(seed) {
+  return function() {
+    seed |= 0;
+    seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+// ─── SEED MANAGEMENT ─────────────────────────────────────────────────────────
+// Seeds are integers in the range [1, 999999].
+// They live in the URL hash as  #seed=123456  so the URL is fully shareable.
+
+const SEED_MAX = 999999;
+
+/** Read the seed from the URL hash, or return null if absent/invalid. */
+function seedFromURL() {
+  const match = window.location.hash.match(/[#&]?seed=(\d+)/i);
+  if (!match) return null;
+  const n = parseInt(match[1], 10);
+  return (n >= 1 && n <= SEED_MAX) ? n : null;
+}
+
+/** Push a seed value into the URL hash without reloading the page. */
+function setSeedInURL(seed) {
+  history.replaceState(null, '', `${window.location.pathname}${window.location.search}#seed=${seed}`);
+}
+
+/** Generate a random seed integer and write it to the URL. */
+function generateNewSeed() {
+  const seed = Math.floor(Math.random() * SEED_MAX) + 1;
+  setSeedInURL(seed);
+  return seed;
+}
+
+/** Build the full shareable URL for the current seed. */
+function buildShareURL(seed) {
+  return `${window.location.origin}${window.location.pathname}#seed=${seed}`;
+}
+
+// ─── GAME ENGINE ─────────────────────────────────────────────────────────────
 const SUITS = { S: '\u2660', C: '\u2663', H: '\u2665', D: '\u2666' };
 const RANK_NAMES = { 2:'2',3:'3',4:'4',5:'5',6:'6',7:'7',8:'8',9:'9',10:'10',11:'J',12:'Q',13:'K',14:'A' };
 
@@ -479,9 +620,10 @@ function makeDeck() {
   return deck;
 }
 
-function shuffle(arr) {
+/** Fisher-Yates shuffle driven by a seeded PRNG so it is fully reproducible. */
+function seededShuffle(arr, rng) {
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rng() * (i + 1));
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
@@ -499,9 +641,24 @@ function cardLabel(c) {
 
 let state = {};
 let showHelp = false;
+// currentSeed is always kept in sync with what is displayed and in the URL.
+let currentSeed = null;
 
-function initGame() {
-  const deck = shuffle(makeDeck());
+function initGame(seed) {
+  // Determine seed: use provided value, fall back to URL, otherwise generate fresh.
+  if (seed == null) {
+    seed = seedFromURL() ?? generateNewSeed();
+  } else {
+    setSeedInURL(seed);
+  }
+  currentSeed = seed;
+
+  // Update the seed badge in the HUD immediately.
+  document.getElementById('seed-display').textContent = seed;
+
+  const rng = mulberry32(seed);
+  const deck = seededShuffle(makeDeck(), rng);
+
   state = {
     deck,
     room: [],
@@ -513,7 +670,7 @@ function initGame() {
     cardsPlayedThisRoom: 0,
     potionUsedThisRoom: false,
     lastRanAway: false,
-    log: [{ text: 'You descend into the dungeon...', cls: 'info' }],
+    log: [{ text: `Seed #${seed} — you descend into the dungeon...`, cls: 'info' }],
     gameOver: false,
     won: false,
   };
@@ -1278,13 +1435,19 @@ function updateLog() {
 
 function updateOverlays() {
   if (state.gameOver) {
+    const shareURL = buildShareURL(currentSeed);
     overlayContainer.innerHTML = `
       <div class="overlay">
         <h2 style="color: ${state.won ? 'var(--gold)' : 'var(--red)'}">
           ${state.won ? 'Victory' : 'Defeated'}
         </h2>
         <div class="result-msg">${state.won ? `You escaped the dungeon with ${state.health} HP!` : 'The dungeon has claimed another soul.'}</div>
-        <button class="btn" onclick="window._startGame()">Play Again</button>
+        <div class="seed-info">Seed #${currentSeed}</div>
+        <div class="overlay-actions">
+          <button class="btn btn-share" onclick="window._shareGame()">&#x2398; Copy Link</button>
+          <button class="btn" onclick="window._replaySeed()">Replay Same Seed</button>
+          <button class="btn" onclick="window._startGame()">New Game</button>
+        </div>
       </div>`;
   } else if (showHelp) {
     overlayContainer.innerHTML = `
@@ -1313,6 +1476,8 @@ function updateOverlays() {
           <p>You may flee a room before playing any cards \u2014 all 4 cards shuffle back into the deck. You cannot flee two rooms in a row.</p>
           <h3>Winning &amp; Losing</h3>
           <p>Clear every room in the deck to win. If your HP hits 0, the dungeon claims you.</p>
+          <h3>Seeds &amp; Sharing</h3>
+          <p>Every game has a <strong>seed</strong> — a number that determines the card order. Share the link (&#x2398; button) with a friend to challenge them to the exact same dungeon!</p>
           <p class="tip">Designed by Zach Gage &amp; Kurt Bieg</p>
           <button class="help-close-btn" onclick="window._toggleHelp()">Got It</button>
         </div>
@@ -1320,6 +1485,21 @@ function updateOverlays() {
   } else {
     overlayContainer.innerHTML = '';
   }
+}
+
+// ─── SHARE UTILITY ───────────────────────────────────────────────────────────
+/** Copy the shareable seed URL to the clipboard and briefly show feedback. */
+function shareGame() {
+  const url = buildShareURL(currentSeed);
+  navigator.clipboard.writeText(url).then(() => {
+    // Flash the HUD share button as confirmation
+    const btn = document.getElementById('seed-share-btn');
+    btn.classList.add('show-copied');
+    setTimeout(() => btn.classList.remove('show-copied'), 1800);
+  }).catch(() => {
+    // Fallback: prompt so the user can copy manually
+    window.prompt('Copy this link to share your seed:', url);
+  });
 }
 
 // ─── EFFECTS ───
@@ -1341,11 +1521,12 @@ function triggerDamageFlash() {
   });
 }
 
-// ─── GLOBAL BINDINGS (for onclick in HTML) ───
+// ─── GLOBAL BINDINGS (for onclick in HTML) ────────────────────────────────────
 window._playCard = playCard;
 window._runAway = runAway;
+
+/** Start a brand-new game with a fresh random seed. */
 window._startGame = function() {
-  // Clean up old meshes
   cardMeshes.forEach(mesh => {
     scene.remove(mesh);
     mesh.geometry.dispose();
@@ -1353,10 +1534,27 @@ window._startGame = function() {
     mesh.material.dispose();
   });
   cardMeshes = [];
-  initGame();
+  initGame(generateNewSeed());
   syncCards();
   updateHUD();
 };
+
+/** Replay the exact same dungeon (same seed, fresh attempt). */
+window._replaySeed = function() {
+  cardMeshes.forEach(mesh => {
+    scene.remove(mesh);
+    mesh.geometry.dispose();
+    mesh.material.map.dispose();
+    mesh.material.dispose();
+  });
+  cardMeshes = [];
+  initGame(currentSeed);
+  syncCards();
+  updateHUD();
+};
+
+window._shareGame = shareGame;
+
 window._toggleHelp = function() {
   showHelp = !showHelp;
   updateOverlays();
@@ -1364,6 +1562,7 @@ window._toggleHelp = function() {
 
 document.getElementById('hud-help').addEventListener('click', window._toggleHelp);
 document.getElementById('flee-btn').addEventListener('click', window._runAway);
+document.getElementById('seed-share-btn').addEventListener('click', shareGame);
 
 // ─── ANIMATION LOOP ───
 let time = 0;
@@ -1386,9 +1585,11 @@ function tick() {
 }
 renderer.setAnimationLoop(tick);
 
-// ─── INIT ───
+// ─── INIT ─────────────────────────────────────────────────────────────────────
 document.fonts.ready.then(() => {
   cardBackTexture = generateCardBack();
+
+  // initGame will read the seed from the URL if present, or generate a new one.
   initGame();
 
   // Title flash
