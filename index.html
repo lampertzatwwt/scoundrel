@@ -207,6 +207,7 @@
   .log-entry.heal { color: var(--green); }
   .log-entry.equip { color: var(--blue); }
   .log-entry.info { color: var(--gold-dim); }
+  .log-entry.streak { color: #d4a0ff; font-style: italic; font-weight: 600; }
 
   /* Help Button */
   #hud-help {
@@ -236,6 +237,73 @@
     opacity: 0;
   }
 
+  /* ── STREAK BANNER ── */
+  #streak-banner {
+    position: fixed;
+    top: 38%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 50;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+  }
+  #streak-title {
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: 2.8rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-shadow: 0 0 30px currentColor, 0 0 60px currentColor;
+    white-space: nowrap;
+  }
+  #streak-subtitle {
+    font-family: 'Crimson Text', Georgia, serif;
+    font-size: 1rem;
+    font-style: italic;
+    letter-spacing: 0.2em;
+    opacity: 0.75;
+    margin-top: 4px;
+    white-space: nowrap;
+  }
+
+  /* Streak HUD pip row — top-center under room bar */
+  #hud-streak-pips {
+    position: absolute;
+    top: 58px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    pointer-events: none;
+    transition: opacity 0.4s;
+    opacity: 0;
+  }
+  .streak-pip {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #3a3a4a;
+    transition: background 0.3s, box-shadow 0.3s, transform 0.3s;
+  }
+  .streak-pip.active {
+    background: var(--gold);
+    box-shadow: 0 0 6px rgba(201,168,76,0.8);
+    transform: scale(1.2);
+  }
+  .streak-pip.active.tier2 {
+    background: #e08030;
+    box-shadow: 0 0 6px rgba(224,128,48,0.8);
+  }
+  .streak-pip.active.tier3 {
+    background: var(--red-glow);
+    box-shadow: 0 0 8px rgba(255,68,68,0.9);
+  }
+  .streak-pip.active.tier4 {
+    background: #c060ff;
+    box-shadow: 0 0 10px rgba(192,96,255,0.9);
+  }
+
   /* ── OVERLAYS ── */
   .overlay {
     position: fixed; inset: 0;
@@ -255,6 +323,11 @@
   }
   .overlay .result-msg {
     font-size: 1.1rem; color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+  .overlay .streak-msg {
+    font-size: 0.9rem; color: #d4a0ff;
+    font-style: italic;
     margin-bottom: 24px;
   }
   .overlay .btn { font-size: 1rem; padding: 12px 32px; }
@@ -391,6 +464,11 @@
     /* Title */
     #hud-title h1 { font-size: 1.4rem; }
     #hud-title .subtitle { font-size: 0.6rem; }
+    /* Streak */
+    #streak-banner { top: 36%; }
+    #streak-title { font-size: 1.8rem; letter-spacing: 0.12em; }
+    #streak-subtitle { font-size: 0.7rem; }
+    #hud-streak-pips { top: 46px; }
   }
 </style>
 </head>
@@ -399,6 +477,12 @@
 <canvas id="game-canvas"></canvas>
 
 <div id="damage-flash"></div>
+
+<!-- Streak Banner (center screen) -->
+<div id="streak-banner">
+  <div id="streak-title">DARING</div>
+  <div id="streak-subtitle">kill streak × 2</div>
+</div>
 
 <div id="hud">
   <!-- Health Wheel -->
@@ -432,6 +516,15 @@
     <button id="flee-btn" disabled>Flee Room</button>
   </div>
 
+  <!-- Streak Pips (below room bar) -->
+  <div id="hud-streak-pips">
+    <div class="streak-pip" id="pip-0"></div>
+    <div class="streak-pip" id="pip-1"></div>
+    <div class="streak-pip" id="pip-2"></div>
+    <div class="streak-pip" id="pip-3"></div>
+    <div class="streak-pip" id="pip-4"></div>
+  </div>
+
   <!-- Help -->
   <button id="hud-help" title="How to Play">?</button>
 
@@ -463,9 +556,92 @@
 <script type="module">
 import * as THREE from 'three';
 
-// ─── GAME ENGINE (preserved) ───
+// ─── GAME ENGINE ───
 const SUITS = { S: '\u2660', C: '\u2663', H: '\u2665', D: '\u2666' };
 const RANK_NAMES = { 2:'2',3:'3',4:'4',5:'5',6:'6',7:'7',8:'8',9:'9',10:'10',11:'J',12:'Q',13:'K',14:'A' };
+
+// ── STREAK SYSTEM ──────────────────────────────────────────────────────────
+// Tracks consecutive monster kills where the player took 0 damage.
+// Each threshold unlocks a new title and shifts the dungeon's mood lighting.
+// At streak ≥ 3 a clean weapon-kill (0 damage) awards +1 bonus HP.
+const STREAK_TIERS = [
+  // { minStreak, title, subtitle, color (hex css), lightColor (THREE hex) }
+  { min: 2, title: 'DARING',       sub: 'blood is not your own',      css: '#c9a84c', light: 0xc9a84c, tier: 1 },
+  { min: 3, title: 'RECKLESS',     sub: 'the dungeon fears you',       css: '#e08030', light: 0xe08030, tier: 2 },
+  { min: 4, title: 'SAVAGE',       sub: 'monsters tremble before you', css: '#ff4444', light: 0xff4444, tier: 3 },
+  { min: 5, title: 'UNSTOPPABLE',  sub: 'death itself backs away',     css: '#ff7700', light: 0xff7700, tier: 3 },
+  { min: 7, title: 'SCOUNDREL!!!', sub: '✦ legend of the dungeon ✦',  css: '#c060ff', light: 0xc060ff, tier: 4 },
+];
+
+function getStreakTier(streak) {
+  let tier = null;
+  for (const t of STREAK_TIERS) {
+    if (streak >= t.min) tier = t;
+  }
+  return tier;
+}
+
+let streakBannerTimeout = null;
+
+function showStreakBanner(streak) {
+  const tier = getStreakTier(streak);
+  if (!tier) return;
+
+  const banner = document.getElementById('streak-banner');
+  const titleEl = document.getElementById('streak-title');
+  const subEl   = document.getElementById('streak-subtitle');
+
+  titleEl.textContent = tier.title;
+  titleEl.style.color = tier.css;
+  subEl.textContent   = tier.sub;
+  subEl.style.color   = tier.css;
+
+  // Kill any running tween on the banner
+  gsap.killTweensOf(banner);
+  if (streakBannerTimeout) clearTimeout(streakBannerTimeout);
+
+  // Slam in, hold, fade out
+  gsap.fromTo(banner,
+    { opacity: 0, scale: 1.3 },
+    { opacity: 1, scale: 1, duration: 0.22, ease: 'back.out(1.5)',
+      onComplete: () => {
+        streakBannerTimeout = setTimeout(() => {
+          gsap.to(banner, { opacity: 0, y: -18, duration: 0.55, ease: 'power2.in',
+            onComplete: () => { gsap.set(banner, { y: 0 }); }
+          });
+        }, 1100);
+      }
+    }
+  );
+}
+
+function hideStreakBanner() {
+  const banner = document.getElementById('streak-banner');
+  gsap.killTweensOf(banner);
+  if (streakBannerTimeout) clearTimeout(streakBannerTimeout);
+  gsap.to(banner, { opacity: 0, duration: 0.3 });
+}
+
+function updateStreakPips(streak) {
+  const maxPips = 5;
+  const pipsEl  = document.getElementById('hud-streak-pips');
+  const tier    = getStreakTier(streak);
+  const tierClass = tier ? `tier${tier.tier}` : '';
+
+  // Show pip row only when streak > 0
+  pipsEl.style.opacity = streak > 0 ? '1' : '0';
+
+  for (let i = 0; i < maxPips; i++) {
+    const pip = document.getElementById(`pip-${i}`);
+    pip.className = 'streak-pip';
+    if (i < Math.min(streak, maxPips)) {
+      pip.classList.add('active');
+      if (tierClass) pip.classList.add(tierClass);
+    }
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
 
 function makeDeck() {
   const deck = [];
@@ -516,6 +692,8 @@ function initGame() {
     log: [{ text: 'You descend into the dungeon...', cls: 'info' }],
     gameOver: false,
     won: false,
+    killStreak: 0,        // ← streak counter
+    bestStreak: 0,        // ← personal best this run
   };
   dealRoom();
 }
@@ -546,6 +724,26 @@ function addLog(text, cls = '') {
   if (state.log.length > 50) state.log.shift();
 }
 
+// Apply streak mood to scene lighting
+function applyStreakLighting(streak) {
+  const tier = getStreakTier(streak);
+  if (tier) {
+    gsap.to(mainLight.color, {
+      r: ((tier.light >> 16) & 0xff) / 255,
+      g: ((tier.light >> 8)  & 0xff) / 255,
+      b: (tier.light & 0xff) / 255,
+      duration: 0.6,
+      ease: 'power2.out',
+    });
+    // Ramp up intensity slightly
+    gsap.to(mainLight, { intensity: 30 + tier.tier * 4, duration: 0.6 });
+  } else {
+    // Reset to base gold
+    gsap.to(mainLight.color, { r: 0xc9/255, g: 0xa8/255, b: 0x4c/255, duration: 0.8 });
+    gsap.to(mainLight, { intensity: 25, duration: 0.8 });
+  }
+}
+
 function playCard(index, action) {
   const card = state.room[index];
   if (!card) return;
@@ -559,13 +757,40 @@ function playCard(index, action) {
       state.health -= dmg;
       tookDamage = true;
       addLog(`Fought ${cardLabel(card)} barehanded \u2014 took ${dmg} damage!`, 'damage');
+      // Break streak on any damage
+      if (state.killStreak > 0) {
+        addLog(`Streak broken at ${state.killStreak}!`, 'streak');
+      }
+      state.killStreak = 0;
     } else if (action === 'weapon') {
       if (!state.weapon) return;
       dmg = Math.max(0, card.rank - state.weapon.rank);
       state.health -= dmg;
       state.weaponLimit = card.rank;
       tookDamage = dmg > 0;
-      addLog(`Fought ${cardLabel(card)} with ${cardLabel(state.weapon)} \u2014 took ${dmg} damage.`, dmg > 0 ? 'damage' : 'info');
+      if (dmg > 0) {
+        addLog(`Fought ${cardLabel(card)} with ${cardLabel(state.weapon)} \u2014 took ${dmg} damage.`, 'damage');
+        if (state.killStreak > 0) {
+          addLog(`Streak broken at ${state.killStreak}!`, 'streak');
+        }
+        state.killStreak = 0;
+      } else {
+        // Clean kill — extend streak
+        state.killStreak++;
+        state.bestStreak = Math.max(state.bestStreak, state.killStreak);
+        addLog(`Fought ${cardLabel(card)} with ${cardLabel(state.weapon)} \u2014 no damage taken.`, 'info');
+        // Streak bonus: ≥3 clean kills in a row → +1 HP
+        if (state.killStreak >= 3) {
+          const bonus = Math.min(1, state.maxHealth - state.health);
+          if (bonus > 0) {
+            state.health += bonus;
+            addLog(`\u2728 Streak bonus: +${bonus} HP`, 'heal');
+          }
+        }
+        // Show banner
+        showStreakBanner(state.killStreak);
+        applyStreakLighting(state.killStreak);
+      }
     }
     if (state.health <= 0) {
       state.health = 0;
@@ -604,6 +829,7 @@ function playCard(index, action) {
 
   if (tookDamage && dmg > 0) {
     triggerDamageFlash();
+    applyStreakLighting(0); // reset lighting on damage
   }
 
   state.room.splice(index, 1);
@@ -615,9 +841,6 @@ function playCard(index, action) {
 
   if (state.cardsPlayedThisRoom >= 3 && state.room.length <= 1 && !state.gameOver) {
     state.lastRanAway = false;
-    if (state.deck.length === 0 && state.room.length <= 1) {
-      // final cards
-    }
     setTimeout(() => {
       dealRoom();
       if (state.room.length === 0) {
@@ -641,6 +864,13 @@ function runAway() {
   if (state.lastRanAway || state.cardsPlayedThisRoom > 0) return;
   while (state.room.length > 0) {
     state.deck.unshift(state.room.pop());
+  }
+  // Fleeing breaks the streak
+  if (state.killStreak > 0) {
+    addLog(`You fled — streak of ${state.killStreak} abandoned.`, 'streak');
+    state.killStreak = 0;
+    applyStreakLighting(0);
+    hideStreakBanner();
   }
   state.lastRanAway = true;
   addLog('You fled the room...', 'info');
@@ -753,7 +983,6 @@ scene.add(particles);
 function updateCamera() {
   const aspect = window.innerWidth / window.innerHeight;
   camera.aspect = aspect;
-  // Wider FOV in portrait to see all cards
   camera.fov = aspect < 0.7 ? 65 : aspect < 1.0 ? 50 : 45;
   camera.updateProjectionMatrix();
 }
@@ -941,7 +1170,6 @@ function createCardMesh(card, roomIndex) {
   const mesh = new THREE.Mesh(geo, mat);
   mesh.userData = { card, roomIndex };
 
-  // Start position (above, for deal animation)
   mesh.position.set(0, 5, -3);
   mesh.rotation.x = -Math.PI / 3;
   mesh.material.opacity = 0;
@@ -953,9 +1181,9 @@ function createCardMesh(card, roomIndex) {
 // Card layout positions
 function getCardScale() {
   const aspect = window.innerWidth / window.innerHeight;
-  if (aspect < 0.7) return { spacing: 0.72, scale: 0.52, y: 1.5, z: 2.5 };  // portrait
-  if (aspect < 1.0) return { spacing: 1.2, scale: 0.85, y: 0.9, z: 2.0 };  // squarish
-  return { spacing: 1.6, scale: 1.0, y: 0.8, z: 1.5 };  // landscape
+  if (aspect < 0.7) return { spacing: 0.72, scale: 0.52, y: 1.5, z: 2.5 };
+  if (aspect < 1.0) return { spacing: 1.2, scale: 0.85, y: 0.9, z: 2.0 };
+  return { spacing: 1.6, scale: 1.0, y: 0.8, z: 1.5 };
 }
 
 function getRoomPositions(count) {
@@ -981,7 +1209,6 @@ function getSelectedPositions(selectedIdx, count) {
   const positions = [];
 
   if (isMobile) {
-    // Mobile: selected card centered, others in a row below
     const otherSpacing = 0.7;
     let otherIdx = 0;
     const otherCount = count - 1;
@@ -989,10 +1216,7 @@ function getSelectedPositions(selectedIdx, count) {
 
     for (let i = 0; i < count; i++) {
       if (i === selectedIdx) {
-        positions.push({
-          x: 0, y: 2.0, z: 3.0,
-          rx: -0.08, ry: 0, scale: 0.95,
-        });
+        positions.push({ x: 0, y: 2.0, z: 3.0, rx: -0.08, ry: 0, scale: 0.95 });
       } else {
         positions.push({
           x: otherStartX + otherIdx * otherSpacing,
@@ -1003,7 +1227,6 @@ function getSelectedPositions(selectedIdx, count) {
       }
     }
   } else {
-    // Desktop: selected card on the left, others in a row on the right
     let otherIdx = 0;
     const otherCount = count - 1;
     const otherSpacing = 0.9;
@@ -1011,10 +1234,7 @@ function getSelectedPositions(selectedIdx, count) {
 
     for (let i = 0; i < count; i++) {
       if (i === selectedIdx) {
-        positions.push({
-          x: -1.8, y: 1.0, z: 2.5,
-          rx: -0.15, ry: 0.06, scale: 1.2,
-        });
+        positions.push({ x: -1.8, y: 1.0, z: 2.5, rx: -0.15, ry: 0.06, scale: 1.2 });
       } else {
         positions.push({
           x: otherStartX + otherIdx * otherSpacing,
@@ -1053,7 +1273,6 @@ function animateCardPositions(instant = false) {
 function syncCards() {
   const positions = getRoomPositions(state.room.length);
 
-  // Build a map of existing meshes by card identity (suit+rank)
   const existingByKey = new Map();
   cardMeshes.forEach(mesh => {
     const c = mesh.userData.card;
@@ -1070,7 +1289,6 @@ function syncCards() {
     const p = positions[i];
 
     if (existing) {
-      // Reuse existing mesh — kill any in-flight tweens and slide to new position
       existingByKey.delete(key);
       existing.userData.roomIndex = i;
       newCardMeshes.push(existing);
@@ -1078,47 +1296,19 @@ function syncCards() {
       gsap.killTweensOf(existing.rotation);
       gsap.killTweensOf(existing.scale);
       gsap.killTweensOf(existing.material);
-      gsap.to(existing.position, {
-        x: p.x, y: p.y, z: p.z,
-        duration: 0.5,
-        ease: 'power2.inOut',
-      });
-      gsap.to(existing.rotation, {
-        x: p.rx, y: 0,
-        duration: 0.5,
-        ease: 'power2.inOut',
-      });
-      gsap.to(existing.scale, {
-        x: p.scale, y: p.scale, z: p.scale,
-        duration: 0.5,
-        ease: 'power2.inOut',
-      });
+      gsap.to(existing.position, { x: p.x, y: p.y, z: p.z, duration: 0.5, ease: 'power2.inOut' });
+      gsap.to(existing.rotation, { x: p.rx, y: 0, duration: 0.5, ease: 'power2.inOut' });
+      gsap.to(existing.scale, { x: p.scale, y: p.scale, z: p.scale, duration: 0.5, ease: 'power2.inOut' });
     } else {
-      // New card — deal from ceiling
       const mesh = createCardMesh(card, i);
       newCardMeshes.push(mesh);
-      gsap.to(mesh.position, {
-        x: p.x, y: p.y, z: p.z,
-        duration: 0.6,
-        delay: 0.2 + newCardDelay * 0.12,
-        ease: 'power2.out',
-      });
-      gsap.to(mesh.rotation, {
-        x: p.rx,
-        duration: 0.6,
-        delay: 0.2 + newCardDelay * 0.12,
-        ease: 'power2.out',
-      });
-      gsap.to(mesh.material, {
-        opacity: 1,
-        duration: 0.4,
-        delay: 0.2 + newCardDelay * 0.12,
-      });
+      gsap.to(mesh.position, { x: p.x, y: p.y, z: p.z, duration: 0.6, delay: 0.2 + newCardDelay * 0.12, ease: 'power2.out' });
+      gsap.to(mesh.rotation, { x: p.rx, duration: 0.6, delay: 0.2 + newCardDelay * 0.12, ease: 'power2.out' });
+      gsap.to(mesh.material, { opacity: 1, duration: 0.4, delay: 0.2 + newCardDelay * 0.12 });
       newCardDelay++;
     }
   });
 
-  // Dispose of leftover meshes that are no longer in the room
   existingByKey.forEach(mesh => {
     scene.remove(mesh);
     mesh.geometry.dispose();
@@ -1156,9 +1346,7 @@ canvas.addEventListener('pointermove', (e) => {
     canvas.style.cursor = 'pointer';
     const mesh = hits[0].object;
     if (hoveredMesh !== mesh) {
-      if (hoveredMesh) {
-        gsap.to(hoveredMesh.material, { emissiveIntensity: 0.35, duration: 0.2 });
-      }
+      if (hoveredMesh) gsap.to(hoveredMesh.material, { emissiveIntensity: 0.35, duration: 0.2 });
       hoveredMesh = mesh;
       gsap.to(mesh.material, { emissiveIntensity: 0.7, duration: 0.2 });
     }
@@ -1172,17 +1360,17 @@ canvas.addEventListener('pointermove', (e) => {
 });
 
 // ─── HUD UPDATES ───
-const healthArc = document.getElementById('health-arc');
+const healthArc    = document.getElementById('health-arc');
 const healthNumber = document.getElementById('health-number');
-const hudHealth = document.getElementById('hud-health');
-const weaponValue = document.getElementById('weapon-value');
-const deckValue = document.getElementById('deck-value');
+const hudHealth    = document.getElementById('hud-health');
+const weaponValue  = document.getElementById('weapon-value');
+const deckValue    = document.getElementById('deck-value');
 const hudRoomLabel = document.getElementById('hud-room-label');
-const fleeBtn = document.getElementById('flee-btn');
-const hudActions = document.getElementById('hud-actions');
-const hudLog = document.getElementById('hud-log');
+const fleeBtn      = document.getElementById('flee-btn');
+const hudActions   = document.getElementById('hud-actions');
+const hudLog       = document.getElementById('hud-log');
 const overlayContainer = document.getElementById('overlay-container');
-const damageFlash = document.getElementById('damage-flash');
+const damageFlash  = document.getElementById('damage-flash');
 
 const ARC_CIRCUMFERENCE = 2 * Math.PI * 17; // ~106.81
 
@@ -1195,7 +1383,6 @@ function updateHUD() {
   gsap.to(healthArc, { attr: { 'stroke-dashoffset': offset }, duration: 0.5, ease: 'power2.out' });
   healthNumber.textContent = s.health;
 
-  // Health color class
   healthArc.className.baseVal = 'health-wheel-fill';
   if (healthPct > 0.6) healthArc.classList.add('high');
   else if (healthPct > 0.35) healthArc.classList.add('mid');
@@ -1229,6 +1416,9 @@ function updateHUD() {
   const canFlee = !s.lastRanAway && s.cardsPlayedThisRoom === 0 && !s.gameOver && s.room.length === 4;
   fleeBtn.disabled = !canFlee;
   fleeBtn.style.display = s.gameOver ? 'none' : '';
+
+  // Streak pips
+  updateStreakPips(s.killStreak);
 
   // Actions
   updateActions();
@@ -1278,12 +1468,16 @@ function updateLog() {
 
 function updateOverlays() {
   if (state.gameOver) {
+    const bestStreakLine = state.bestStreak >= 2
+      ? `<div class="streak-msg">\u2728 Best kill streak: ${state.bestStreak} (${getStreakTier(state.bestStreak)?.title ?? ''})</div>`
+      : '';
     overlayContainer.innerHTML = `
       <div class="overlay">
         <h2 style="color: ${state.won ? 'var(--gold)' : 'var(--red)'}">
           ${state.won ? 'Victory' : 'Defeated'}
         </h2>
         <div class="result-msg">${state.won ? `You escaped the dungeon with ${state.health} HP!` : 'The dungeon has claimed another soul.'}</div>
+        ${bestStreakLine}
         <button class="btn" onclick="window._startGame()">Play Again</button>
       </div>`;
   } else if (showHelp) {
@@ -1311,6 +1505,11 @@ function updateOverlays() {
           </div>
           <h3>Fleeing</h3>
           <p>You may flee a room before playing any cards \u2014 all 4 cards shuffle back into the deck. You cannot flee two rooms in a row.</p>
+          <h3>Kill Streak \u2728</h3>
+          <p>Defeat monsters with your weapon without taking any damage to build a <strong>kill streak</strong>. The dungeon's light shifts as your legend grows:</p>
+          <p>\u00b7 2 kills \u2014 <strong style="color:#c9a84c">Daring</strong> &nbsp; \u00b7 3 kills \u2014 <strong style="color:#e08030">Reckless</strong> &nbsp; \u00b7 4 kills \u2014 <strong style="color:#ff4444">Savage</strong></p>
+          <p>\u00b7 5 kills \u2014 <strong style="color:#ff7700">Unstoppable</strong> &nbsp; \u00b7 7 kills \u2014 <strong style="color:#c060ff">SCOUNDREL!!!</strong></p>
+          <p>At streak \u2265 3, each clean kill awards a <strong>+1 bonus HP</strong>. Taking any damage resets the streak.</p>
           <h3>Winning &amp; Losing</h3>
           <p>Clear every room in the deck to win. If your HP hits 0, the dungeon claims you.</p>
           <p class="tip">Designed by Zach Gage &amp; Kurt Bieg</p>
@@ -1326,7 +1525,6 @@ function updateOverlays() {
 function triggerDamageFlash() {
   gsap.fromTo(damageFlash, { opacity: 0.6 }, { opacity: 0, duration: 0.5, ease: 'power2.out' });
 
-  // Camera shake
   const originalPos = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
   gsap.to(camera.position, {
     x: originalPos.x + 0.08,
@@ -1341,11 +1539,10 @@ function triggerDamageFlash() {
   });
 }
 
-// ─── GLOBAL BINDINGS (for onclick in HTML) ───
+// ─── GLOBAL BINDINGS ───
 window._playCard = playCard;
 window._runAway = runAway;
 window._startGame = function() {
-  // Clean up old meshes
   cardMeshes.forEach(mesh => {
     scene.remove(mesh);
     mesh.geometry.dispose();
@@ -1353,6 +1550,8 @@ window._startGame = function() {
     mesh.material.dispose();
   });
   cardMeshes = [];
+  hideStreakBanner();
+  applyStreakLighting(0);
   initGame();
   syncCards();
   updateHUD();
@@ -1370,17 +1569,33 @@ let time = 0;
 function tick() {
   time += 0.005;
 
-  // Animate particles slowly drifting
+  // Animate particles — faster & more frantic when on a high streak
+  const streakBoost = Math.min(state.killStreak || 0, 7) / 7;
   const posArr = particles.geometry.attributes.position.array;
   for (let i = 0; i < particleCount; i++) {
-    posArr[i * 3 + 1] += 0.002;
+    posArr[i * 3 + 1] += 0.002 + streakBoost * 0.004;
     if (posArr[i * 3 + 1] > 6) posArr[i * 3 + 1] = 0;
-    posArr[i * 3] += Math.sin(time + i) * 0.001;
+    posArr[i * 3] += Math.sin(time + i) * (0.001 + streakBoost * 0.002);
   }
   particles.geometry.attributes.position.needsUpdate = true;
 
+  // Particle color shifts with streak
+  if (state.killStreak >= 7) {
+    particleMat.color.setHex(0xc060ff);
+  } else if (state.killStreak >= 5) {
+    particleMat.color.setHex(0xff7700);
+  } else if (state.killStreak >= 4) {
+    particleMat.color.setHex(0xff4444);
+  } else if (state.killStreak >= 3) {
+    particleMat.color.setHex(0xe08030);
+  } else if (state.killStreak >= 2) {
+    particleMat.color.setHex(0xd4a040);
+  } else {
+    particleMat.color.setHex(0xc9a84c);
+  }
+
   // Subtle light pulse
-  mainLight.intensity = 25 + Math.sin(time * 2) * 2;
+  mainLight.intensity = (mainLight.intensity * 0.97) + ((25 + Math.sin(time * 2) * 2) * 0.03);
 
   renderer.render(scene, camera);
 }
@@ -1391,14 +1606,12 @@ document.fonts.ready.then(() => {
   cardBackTexture = generateCardBack();
   initGame();
 
-  // Title flash
   const titleEl = document.getElementById('hud-title');
   gsap.to(titleEl, { opacity: 1, duration: 1, ease: 'power2.out' });
   gsap.to(titleEl, { opacity: 0, duration: 0.8, delay: 2.2, ease: 'power2.in', onComplete: () => {
     titleEl.style.display = 'none';
   }});
 
-  // Delay card dealing for title
   setTimeout(() => {
     syncCards();
     updateHUD();
