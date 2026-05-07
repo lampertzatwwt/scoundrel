@@ -19,6 +19,8 @@
     --red-glow: #ff4444;
     --green: #4a9e5a;
     --blue: #4a7ec4;
+    --purple: #9a4ec4;
+    --purple-glow: #cc66ff;
     --text: #e8e4dc;
     --text-dim: #7a7680;
   }
@@ -150,6 +152,24 @@
   }
   #flee-btn:disabled { opacity: 0.25; cursor: not-allowed; }
 
+  /* ── ROOM COUNTER (top-center, below room bar) ── */
+  #hud-room-counter {
+    position: absolute; top: 56px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 6px;
+    pointer-events: none;
+  }
+  .room-pip {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--border);
+    transition: background 0.4s, box-shadow 0.4s;
+  }
+  .room-pip.done { background: var(--gold-dim); }
+  .room-pip.current {
+    background: var(--gold);
+    box-shadow: 0 0 8px rgba(201,168,76,0.6);
+  }
+  .room-pip.danger { background: var(--red); box-shadow: 0 0 8px rgba(255,68,68,0.5); }
+
   /* Actions */
   #hud-actions {
     position: absolute; bottom: 160px; left: 50%; transform: translateX(-50%);
@@ -186,6 +206,24 @@
   .btn-weapon:hover:not(:disabled) { border-color: #6a9ee4; color: #6a9ee4; box-shadow: 0 0 15px rgba(74,126,196,0.15); }
   .btn-heal { border-color: var(--green); color: var(--green); }
   .btn-heal:hover:not(:disabled) { border-color: #6abe7a; color: #6abe7a; box-shadow: 0 0 15px rgba(74,158,90,0.15); }
+  .btn-curse {
+    border-color: var(--purple); color: var(--purple);
+    position: relative; overflow: hidden;
+  }
+  .btn-curse:hover:not(:disabled) {
+    border-color: var(--purple-glow); color: var(--purple-glow);
+    box-shadow: 0 0 15px rgba(154,78,196,0.3);
+  }
+  .btn-curse::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(154,78,196,0.08) 50%, transparent 100%);
+    transform: translateX(-100%);
+    animation: curse-shimmer 2.5s infinite;
+  }
+  @keyframes curse-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
 
   /* Log */
   #hud-log {
@@ -207,6 +245,7 @@
   .log-entry.heal { color: var(--green); }
   .log-entry.equip { color: var(--blue); }
   .log-entry.info { color: var(--gold-dim); }
+  .log-entry.curse { color: var(--purple-glow); }
 
   /* Help Button */
   #hud-help {
@@ -232,6 +271,14 @@
   #damage-flash {
     position: fixed; inset: 0; z-index: 5;
     background: rgba(196,64,64,0.25);
+    pointer-events: none;
+    opacity: 0;
+  }
+
+  /* Curse Flash */
+  #curse-flash {
+    position: fixed; inset: 0; z-index: 5;
+    background: rgba(100,30,160,0.3);
     pointer-events: none;
     opacity: 0;
   }
@@ -357,38 +404,59 @@
     margin-top: 4px;
   }
 
+  /* ── CURSE REVEAL OVERLAY ── */
+  #curse-reveal-overlay {
+    position: fixed; inset: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+  }
+  #curse-reveal-box {
+    background: rgba(12,5,20,0.95);
+    border: 2px solid var(--purple);
+    border-radius: 12px;
+    padding: 20px 32px;
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    color: var(--purple-glow);
+    box-shadow: 0 0 40px rgba(154,78,196,0.4), inset 0 0 30px rgba(100,30,160,0.15);
+    letter-spacing: 0.05em;
+    max-width: 340px;
+  }
+  #curse-reveal-box .reveal-icon { font-size: 2rem; margin-bottom: 6px; }
+  #curse-reveal-box .reveal-title {
+    font-size: 0.7rem; letter-spacing: 0.2em;
+    color: var(--text-dim); margin-bottom: 4px;
+    text-transform: uppercase;
+  }
+
   /* ── MOBILE / PORTRAIT ── */
   @media (max-width: 600px) {
     #hud { padding: 8px; }
-    /* Health — smaller, top-left */
     #hud-health { width: 50px; height: 50px; top: 8px; left: 8px; }
     .health-wheel { width: 50px; height: 50px; }
     .health-number { font-size: 0.95rem; }
     .health-label { font-size: 0.4rem; }
-    /* Weapon — below health */
     #hud-weapon { top: 64px; left: 8px; padding: 4px 8px; min-width: auto; }
     .weapon-label { font-size: 0.45rem; }
     .weapon-value { font-size: 0.75rem; }
-    /* Deck — top-right, smaller */
     #hud-deck { top: 8px; right: 8px; padding: 4px 8px; }
     .deck-label { font-size: 0.45rem; }
     .deck-value { font-size: 0.9rem; }
-    /* Help — beside deck */
     #hud-help { top: 8px; right: 52px; width: 26px; height: 26px; font-size: 0.75rem; }
-    /* Room bar — centered below top HUD */
     #hud-room-bar {
-      top: auto; bottom: auto;
+      top: auto;
       top: 64px; left: 50%; gap: 8px;
     }
     #hud-room-label { font-size: 0.45rem; letter-spacing: 0.1em; }
     #flee-btn { font-size: 0.45rem; padding: 3px 8px; }
-    /* Actions */
+    #hud-room-counter { top: 96px; }
+    .room-pip { width: 5px; height: 5px; }
     #hud-actions { bottom: 130px; }
     .btn { font-size: 0.6rem; padding: 7px 12px; }
-    /* Log */
     #hud-log { bottom: 8px; left: 8px; right: 8px; padding: 6px 8px;
       max-height: 80px; font-size: 0.7rem; }
-    /* Title */
     #hud-title h1 { font-size: 1.4rem; }
     #hud-title .subtitle { font-size: 0.6rem; }
   }
@@ -399,6 +467,7 @@
 <canvas id="game-canvas"></canvas>
 
 <div id="damage-flash"></div>
+<div id="curse-flash"></div>
 
 <div id="hud">
   <!-- Health Wheel -->
@@ -432,6 +501,9 @@
     <button id="flee-btn" disabled>Flee Room</button>
   </div>
 
+  <!-- Room Progress Pips -->
+  <div id="hud-room-counter"></div>
+
   <!-- Help -->
   <button id="hud-help" title="How to Play">?</button>
 
@@ -441,6 +513,15 @@
   <!-- Log -->
   <div id="hud-log">
     <div class="log-entry info">You descend into the dungeon...</div>
+  </div>
+</div>
+
+<!-- Curse Reveal Toast -->
+<div id="curse-reveal-overlay">
+  <div id="curse-reveal-box">
+    <div class="reveal-icon" id="curse-reveal-icon">🔮</div>
+    <div class="reveal-title">Divination</div>
+    <div id="curse-reveal-text">This card carries a hex.</div>
   </div>
 </div>
 
@@ -463,9 +544,94 @@
 <script type="module">
 import * as THREE from 'three';
 
-// ─── GAME ENGINE (preserved) ───
+// ─── GAME ENGINE ───
 const SUITS = { S: '\u2660', C: '\u2663', H: '\u2665', D: '\u2666' };
 const RANK_NAMES = { 2:'2',3:'3',4:'4',5:'5',6:'6',7:'7',8:'8',9:'9',10:'10',11:'J',12:'Q',13:'K',14:'A' };
+
+// ── CURSE SYSTEM ──────────────────────────────────────────────────────────────
+// Each room, one of the 4 cards may be "cursed". A cursed card triggers a
+// random malevolent effect when played. The player can spend 3 HP to divine
+// (reveal) whether a selected card is cursed before committing to it.
+// Cursed cards are never marked visually — you must pay to know.
+
+const CURSE_EFFECTS = [
+  {
+    id: 'double_damage',
+    name: 'Hex of Agony',
+    icon: '💀',
+    desc: 'Takes double damage this fight!',
+    apply(s, card) {
+      const dmg = card.rank; // extra damage on top of normal
+      s.health -= dmg;
+      if (s.health < 0) s.health = 0;
+      addLog(`✦ Hex of Agony — you suffer ${dmg} additional damage!`, 'curse');
+    },
+    appliesTo: 'monster',
+  },
+  {
+    id: 'shatter_weapon',
+    name: 'Hex of Shattering',
+    icon: '⚔️',
+    desc: 'Your weapon shatters!',
+    apply(s) {
+      if (s.weapon) {
+        addLog(`✦ Hex of Shattering — your ${cardLabel(s.weapon)} crumbles to dust!`, 'curse');
+        s.weapon = null;
+        s.weaponLimit = Infinity;
+      } else {
+        addLog('✦ Hex of Shattering fizzles — you have no weapon to destroy.', 'curse');
+      }
+    },
+    appliesTo: 'any',
+  },
+  {
+    id: 'wither',
+    name: 'Hex of Withering',
+    icon: '🩸',
+    desc: 'Your max HP is reduced by 3.',
+    apply(s) {
+      const loss = Math.min(3, s.maxHealth - 5); // floor at 5 max HP
+      if (loss > 0) {
+        s.maxHealth -= loss;
+        if (s.health > s.maxHealth) s.health = s.maxHealth;
+        addLog(`✦ Hex of Withering — your vitality dims. Max HP reduced by ${loss} (now ${s.maxHealth}).`, 'curse');
+      } else {
+        addLog('✦ Hex of Withering — your spirit endures.', 'curse');
+      }
+    },
+    appliesTo: 'any',
+  },
+  {
+    id: 'drain_potion',
+    name: 'Hex of Desiccation',
+    icon: '🧪',
+    desc: 'Any healing this room is halved.',
+    apply(s) {
+      s.potionCursed = true;
+      addLog('✦ Hex of Desiccation — healing in this room is halved!', 'curse');
+    },
+    appliesTo: 'any',
+  },
+  {
+    id: 'blind',
+    name: 'Hex of Blindness',
+    icon: '👁️',
+    desc: 'Next divination costs 6 HP instead of 3.',
+    apply(s) {
+      s.divinationCostMod = (s.divinationCostMod || 0) + 3;
+      addLog('✦ Hex of Blindness — divination grows more costly.', 'curse');
+    },
+    appliesTo: 'any',
+  },
+];
+
+function pickCurseEffect(card) {
+  const type = cardType(card);
+  const eligible = CURSE_EFFECTS.filter(e => e.appliesTo === 'any' || e.appliesTo === type);
+  return eligible[Math.floor(Math.random() * eligible.length)];
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
 
 function makeDeck() {
   const deck = [];
@@ -497,8 +663,13 @@ function cardLabel(c) {
   return `${RANK_NAMES[c.rank]}${SUITS[c.suit]}`;
 }
 
+// Total rooms = ceil(44/3) ≈ 15
+const TOTAL_ROOMS = 15;
+
 let state = {};
 let showHelp = false;
+// Track which card mesh index (if any) just had its curse revealed
+let curseRevealedIndex = null;
 
 function initGame() {
   const deck = shuffle(makeDeck());
@@ -512,12 +683,23 @@ function initGame() {
     selectedIndex: null,
     cardsPlayedThisRoom: 0,
     potionUsedThisRoom: false,
+    potionCursed: false,
     lastRanAway: false,
     log: [{ text: 'You descend into the dungeon...', cls: 'info' }],
     gameOver: false,
     won: false,
+    roomNumber: 0,
+    // Curse state
+    cursedRoomIndex: null,     // which room[] index holds the cursed card (null = no curse)
+    curseEffect: null,          // the chosen CurseEffect object
+    revealedCurseIndex: null,  // room[] index that has been divined this room
+    divinationCostMod: 0,      // accumulated extra cost (from Hex of Blindness)
   };
   dealRoom();
+}
+
+function divinationCost() {
+  return 3 + (state.divinationCostMod || 0);
 }
 
 function dealRoom() {
@@ -527,7 +709,22 @@ function dealRoom() {
   }
   state.cardsPlayedThisRoom = 0;
   state.potionUsedThisRoom = false;
+  state.potionCursed = false;
   state.selectedIndex = null;
+  state.revealedCurseIndex = null;
+  state.roomNumber++;
+
+  // ── Assign a curse to this room ──
+  // Probability increases with depth: starts ~20%, reaches ~65% by room 10+
+  const curseChance = Math.min(0.65, 0.20 + (state.roomNumber - 1) * 0.05);
+  if (state.room.length > 0 && Math.random() < curseChance) {
+    state.cursedRoomIndex = Math.floor(Math.random() * state.room.length);
+    state.curseEffect = pickCurseEffect(state.room[state.cursedRoomIndex]);
+  } else {
+    state.cursedRoomIndex = null;
+    state.curseEffect = null;
+  }
+
   if (state.room.length === 0 && state.deck.length === 0) {
     state.gameOver = true;
     state.won = true;
@@ -546,12 +743,63 @@ function addLog(text, cls = '') {
   if (state.log.length > 50) state.log.shift();
 }
 
+// ── Divination: reveal whether selected card is cursed ──────────────────────
+function divineSelectedCard() {
+  const idx = state.selectedIndex;
+  if (idx === null) return;
+  const cost = divinationCost();
+  if (state.health <= cost) return; // must survive
+  state.health -= cost;
+  state.revealedCurseIndex = idx;
+
+  const isCursed = state.cursedRoomIndex === idx;
+  addLog(`You spend ${cost} HP on divination...`, 'info');
+
+  // Show the reveal toast
+  const icon = isCursed ? (state.curseEffect?.icon ?? '💀') : '✨';
+  const text = isCursed
+    ? `${state.curseEffect?.name} — ${state.curseEffect?.desc}`
+    : 'The card is clean.';
+
+  showCurseReveal(icon, text);
+
+  // If the card mesh exists, pulse its glow
+  const mesh = cardMeshes.find(m => m.userData.roomIndex === idx);
+  if (mesh) {
+    if (isCursed) {
+      gsap.to(mesh.material, { emissiveIntensity: 1.8, duration: 0.2, yoyo: true, repeat: 5 });
+      mesh.userData.revealedCursed = true;
+    } else {
+      gsap.to(mesh.material, { emissiveIntensity: 1.2, duration: 0.3, yoyo: true, repeat: 3 });
+      mesh.userData.revealedCursed = false;
+    }
+  }
+
+  triggerDamageFlash();
+  updateHUD();
+}
+
+function showCurseReveal(icon, text) {
+  const overlay = document.getElementById('curse-reveal-overlay');
+  document.getElementById('curse-reveal-icon').textContent = icon;
+  document.getElementById('curse-reveal-text').textContent = text;
+  gsap.killTweensOf(overlay);
+  gsap.fromTo(overlay, { opacity: 0, y: 20 }, {
+    opacity: 1, y: 0, duration: 0.4, ease: 'power2.out',
+    onComplete: () => {
+      gsap.to(overlay, { opacity: 0, y: -10, duration: 0.4, delay: 2.2, ease: 'power2.in' });
+    }
+  });
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 function playCard(index, action) {
   const card = state.room[index];
   if (!card) return;
   const type = cardType(card);
   let tookDamage = false;
   let dmg = 0;
+  const isCursed = state.cursedRoomIndex === index;
 
   if (type === 'monster') {
     if (action === 'fist') {
@@ -567,6 +815,12 @@ function playCard(index, action) {
       tookDamage = dmg > 0;
       addLog(`Fought ${cardLabel(card)} with ${cardLabel(state.weapon)} \u2014 took ${dmg} damage.`, dmg > 0 ? 'damage' : 'info');
     }
+    // Apply curse AFTER normal combat resolves (extra damage stacks)
+    if (isCursed && state.curseEffect) {
+      state.curseEffect.apply(state, card);
+      tookDamage = true;
+      triggerCurseFlash();
+    }
     if (state.health <= 0) {
       state.health = 0;
       state.gameOver = true;
@@ -577,18 +831,39 @@ function playCard(index, action) {
     state.weapon = card;
     state.weaponLimit = Infinity;
     addLog(`Equipped ${cardLabel(card)}${oldWeapon ? ' (replaced '+cardLabel(oldWeapon)+')' : ''}.`, 'equip');
+    if (isCursed && state.curseEffect) {
+      state.curseEffect.apply(state, card);
+      triggerCurseFlash();
+    }
   } else if (type === 'potion') {
     if (!state.potionUsedThisRoom) {
-      const healed = Math.min(card.rank, state.maxHealth - state.health);
+      let healAmount = card.rank;
+      if (state.potionCursed) healAmount = Math.floor(healAmount / 2);
+      const healed = Math.min(healAmount, state.maxHealth - state.health);
       state.health += healed;
       state.potionUsedThisRoom = true;
-      addLog(`Drank potion ${cardLabel(card)} \u2014 healed ${healed} HP.`, 'heal');
+      addLog(`Drank potion ${cardLabel(card)} \u2014 healed ${healed} HP${state.potionCursed ? ' (halved by curse)' : ''}.`, 'heal');
     } else {
       addLog(`Discarded ${cardLabel(card)} \u2014 already used a potion this room.`, 'info');
     }
+    if (isCursed && state.curseEffect) {
+      state.curseEffect.apply(state, card);
+      triggerCurseFlash();
+    }
   }
 
-  // Animate card out, then update state
+  // If we played the cursed card, clear the curse marker for this room
+  // (curse fires once then is gone)
+  if (isCursed) {
+    // Re-map cursedRoomIndex after splice below
+    state.cursedRoomIndex = null;
+    state.curseEffect = null;
+  } else if (state.cursedRoomIndex !== null && state.cursedRoomIndex > index) {
+    // Shift down since room[] shrinks
+    state.cursedRoomIndex--;
+  }
+
+  // Animate card out
   const meshIndex = cardMeshes.findIndex(m => m.userData.roomIndex === index);
   if (meshIndex !== -1) {
     const mesh = cardMeshes[meshIndex];
@@ -609,15 +884,14 @@ function playCard(index, action) {
   state.room.splice(index, 1);
   state.cardsPlayedThisRoom++;
   state.selectedIndex = null;
+  state.revealedCurseIndex = null;
+  curseRevealedIndex = null;
 
   // Re-index remaining meshes
   cardMeshes.forEach((m, i) => { m.userData.roomIndex = i; });
 
   if (state.cardsPlayedThisRoom >= 3 && state.room.length <= 1 && !state.gameOver) {
     state.lastRanAway = false;
-    if (state.deck.length === 0 && state.room.length <= 1) {
-      // final cards
-    }
     setTimeout(() => {
       dealRoom();
       if (state.room.length === 0) {
@@ -643,9 +917,10 @@ function runAway() {
     state.deck.unshift(state.room.pop());
   }
   state.lastRanAway = true;
+  state.cursedRoomIndex = null;
+  state.curseEffect = null;
   addLog('You fled the room...', 'info');
 
-  // Animate all cards out
   cardMeshes.forEach(mesh => {
     gsap.to(mesh.position, { y: 4, z: -4, duration: 0.35, ease: 'power2.in' });
     gsap.to(mesh.material, { opacity: 0, duration: 0.3, onComplete: () => {
@@ -705,6 +980,11 @@ const blueAccent = new THREE.PointLight(0x334455, 8, 15, 2);
 blueAccent.position.set(4, 3, -2);
 scene.add(blueAccent);
 
+// Purple curse light — dim by default, pulses when curses are active
+const curseLight = new THREE.PointLight(0x6622aa, 0, 12, 2);
+curseLight.position.set(0, 4, 1);
+scene.add(curseLight);
+
 // Table
 const tableGeo = new THREE.PlaneGeometry(20, 20);
 const tableMat = new THREE.MeshStandardMaterial({
@@ -753,7 +1033,6 @@ scene.add(particles);
 function updateCamera() {
   const aspect = window.innerWidth / window.innerHeight;
   camera.aspect = aspect;
-  // Wider FOV in portrait to see all cards
   camera.fov = aspect < 0.7 ? 65 : aspect < 1.0 ? 50 : 45;
   camera.updateProjectionMatrix();
 }
@@ -772,7 +1051,10 @@ const TYPE_COLORS = {
   potion:  { bg1: '#3a2030', bg2: '#281828', accent: '#503040', border: '#604050' },
 };
 
-function generateCardTexture(card) {
+// ── Cursed card texture (extra purple sigil layer) ──
+const CURSE_SIGIL_CHARS = ['⊗', '⌖', '⁂', '☽', '⌘'];
+
+function generateCardTexture(card, isCursed = false, isRevealed = false) {
   const w = 512, h = 768;
   const c = document.createElement('canvas');
   c.width = w; c.height = h;
@@ -798,14 +1080,23 @@ function generateCardTexture(card) {
   ctx.fillStyle = radGrad;
   ctx.fillRect(0, 0, w, h);
 
-  // Border
-  ctx.strokeStyle = colors.border;
-  ctx.lineWidth = 3;
+  // ── If the curse has been REVEALED, paint a subtle purple veil ──
+  if (isRevealed && isCursed) {
+    const curseGrad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w * 0.7);
+    curseGrad.addColorStop(0, 'rgba(100,30,180,0.18)');
+    curseGrad.addColorStop(1, 'rgba(60,10,120,0.06)');
+    ctx.fillStyle = curseGrad;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  // Border — purple tint if revealed-cursed
+  ctx.strokeStyle = (isRevealed && isCursed) ? '#7a44cc' : colors.border;
+  ctx.lineWidth = (isRevealed && isCursed) ? 5 : 3;
   roundRect(ctx, 3, 3, w - 6, h - 6, 22);
   ctx.stroke();
 
   // Inner border highlight
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.strokeStyle = (isRevealed && isCursed) ? 'rgba(154,78,196,0.18)' : 'rgba(255,255,255,0.06)';
   ctx.lineWidth = 1;
   roundRect(ctx, 8, 8, w - 16, h - 16, 18);
   ctx.stroke();
@@ -852,6 +1143,32 @@ function generateCardTexture(card) {
   ctx.fillStyle = '#6a6a7a';
   ctx.fillText(`value ${card.rank}`, w / 2, h / 2 + 160);
 
+  // ── Curse revealed sigil (bottom corner watermark) ──
+  if (isRevealed && isCursed) {
+    const sigil = CURSE_SIGIL_CHARS[Math.floor(Math.random() * CURSE_SIGIL_CHARS.length)];
+    ctx.font = '900 52px serif';
+    ctx.fillStyle = 'rgba(154,78,196,0.55)';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'bottom';
+    ctx.fillText(sigil, w - 18, h - 14);
+
+    // Name watermark
+    ctx.font = 'italic 600 18px Crimson Text, serif';
+    ctx.fillStyle = 'rgba(180,120,255,0.45)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('⌖ cursed ⌖', w / 2, h - 14);
+  }
+
+  // ── Clean revealed badge ──
+  if (isRevealed && !isCursed) {
+    ctx.font = 'italic 600 18px Crimson Text, serif';
+    ctx.fillStyle = 'rgba(100,200,120,0.45)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('✦ pure ✦', w / 2, h - 14);
+  }
+
   const texture = new THREE.CanvasTexture(c);
   texture.minFilter = THREE.LinearFilter;
   texture.magFilter = THREE.LinearFilter;
@@ -887,7 +1204,6 @@ function generateCardBack() {
   roundRect(ctx, 2, 2, w - 4, h - 4, 14);
   ctx.stroke();
 
-  // Diamond pattern
   ctx.strokeStyle = '#c9a84c22';
   ctx.lineWidth = 1;
   for (let i = 0; i < 8; i++) {
@@ -904,7 +1220,6 @@ function generateCardBack() {
     }
   }
 
-  // Center emblem
   ctx.font = '900 28px Cinzel, serif';
   ctx.fillStyle = '#c9a84c44';
   ctx.textAlign = 'center';
@@ -923,7 +1238,12 @@ const CARD_H = 1.76;
 let cardBackTexture = null;
 
 function createCardMesh(card, roomIndex) {
-  const frontTexture = generateCardTexture(card);
+  const isRevealedCursed = state.revealedCurseIndex === roomIndex && state.cursedRoomIndex === roomIndex;
+  const isRevealedClean  = state.revealedCurseIndex === roomIndex && state.cursedRoomIndex !== roomIndex;
+  const frontTexture = generateCardTexture(card,
+    state.cursedRoomIndex === roomIndex,
+    state.revealedCurseIndex === roomIndex
+  );
 
   const geo = new THREE.PlaneGeometry(CARD_W, CARD_H);
   const mat = new THREE.MeshStandardMaterial({
@@ -939,9 +1259,13 @@ function createCardMesh(card, roomIndex) {
   });
 
   const mesh = new THREE.Mesh(geo, mat);
-  mesh.userData = { card, roomIndex };
+  mesh.userData = {
+    card,
+    roomIndex,
+    revealedCursed: isRevealedCursed,
+    revealedClean: isRevealedClean,
+  };
 
-  // Start position (above, for deal animation)
   mesh.position.set(0, 5, -3);
   mesh.rotation.x = -Math.PI / 3;
   mesh.material.opacity = 0;
@@ -953,9 +1277,9 @@ function createCardMesh(card, roomIndex) {
 // Card layout positions
 function getCardScale() {
   const aspect = window.innerWidth / window.innerHeight;
-  if (aspect < 0.7) return { spacing: 0.72, scale: 0.52, y: 1.5, z: 2.5 };  // portrait
-  if (aspect < 1.0) return { spacing: 1.2, scale: 0.85, y: 0.9, z: 2.0 };  // squarish
-  return { spacing: 1.6, scale: 1.0, y: 0.8, z: 1.5 };  // landscape
+  if (aspect < 0.7) return { spacing: 0.72, scale: 0.52, y: 1.5, z: 2.5 };
+  if (aspect < 1.0) return { spacing: 1.2, scale: 0.85, y: 0.9, z: 2.0 };
+  return { spacing: 1.6, scale: 1.0, y: 0.8, z: 1.5 };
 }
 
 function getRoomPositions(count) {
@@ -981,7 +1305,6 @@ function getSelectedPositions(selectedIdx, count) {
   const positions = [];
 
   if (isMobile) {
-    // Mobile: selected card centered, others in a row below
     const otherSpacing = 0.7;
     let otherIdx = 0;
     const otherCount = count - 1;
@@ -989,10 +1312,7 @@ function getSelectedPositions(selectedIdx, count) {
 
     for (let i = 0; i < count; i++) {
       if (i === selectedIdx) {
-        positions.push({
-          x: 0, y: 2.0, z: 3.0,
-          rx: -0.08, ry: 0, scale: 0.95,
-        });
+        positions.push({ x: 0, y: 2.0, z: 3.0, rx: -0.08, ry: 0, scale: 0.95 });
       } else {
         positions.push({
           x: otherStartX + otherIdx * otherSpacing,
@@ -1003,7 +1323,6 @@ function getSelectedPositions(selectedIdx, count) {
       }
     }
   } else {
-    // Desktop: selected card on the left, others in a row on the right
     let otherIdx = 0;
     const otherCount = count - 1;
     const otherSpacing = 0.9;
@@ -1011,10 +1330,7 @@ function getSelectedPositions(selectedIdx, count) {
 
     for (let i = 0; i < count; i++) {
       if (i === selectedIdx) {
-        positions.push({
-          x: -1.8, y: 1.0, z: 2.5,
-          rx: -0.15, ry: 0.06, scale: 1.2,
-        });
+        positions.push({ x: -1.8, y: 1.0, z: 2.5, rx: -0.15, ry: 0.06, scale: 1.2 });
       } else {
         positions.push({
           x: otherStartX + otherIdx * otherSpacing,
@@ -1050,10 +1366,25 @@ function animateCardPositions(instant = false) {
   });
 }
 
+// Rebuild a card mesh's texture (e.g. after divination reveals it)
+function refreshCardTexture(roomIndex) {
+  const mesh = cardMeshes.find(m => m.userData.roomIndex === roomIndex);
+  if (!mesh) return;
+  const card = mesh.userData.card;
+  const isCursed = state.cursedRoomIndex === roomIndex;
+  const isRevealed = state.revealedCurseIndex === roomIndex;
+  const newTex = generateCardTexture(card, isCursed, isRevealed);
+  const oldTex = mesh.material.map;
+  mesh.material.map = newTex;
+  mesh.material.emissiveMap = newTex;
+  mesh.material.needsUpdate = true;
+  if (oldTex) oldTex.dispose();
+  mesh.userData.revealedCursed = isCursed && isRevealed;
+}
+
 function syncCards() {
   const positions = getRoomPositions(state.room.length);
 
-  // Build a map of existing meshes by card identity (suit+rank)
   const existingByKey = new Map();
   cardMeshes.forEach(mesh => {
     const c = mesh.userData.card;
@@ -1070,7 +1401,6 @@ function syncCards() {
     const p = positions[i];
 
     if (existing) {
-      // Reuse existing mesh — kill any in-flight tweens and slide to new position
       existingByKey.delete(key);
       existing.userData.roomIndex = i;
       newCardMeshes.push(existing);
@@ -1078,23 +1408,10 @@ function syncCards() {
       gsap.killTweensOf(existing.rotation);
       gsap.killTweensOf(existing.scale);
       gsap.killTweensOf(existing.material);
-      gsap.to(existing.position, {
-        x: p.x, y: p.y, z: p.z,
-        duration: 0.5,
-        ease: 'power2.inOut',
-      });
-      gsap.to(existing.rotation, {
-        x: p.rx, y: 0,
-        duration: 0.5,
-        ease: 'power2.inOut',
-      });
-      gsap.to(existing.scale, {
-        x: p.scale, y: p.scale, z: p.scale,
-        duration: 0.5,
-        ease: 'power2.inOut',
-      });
+      gsap.to(existing.position, { x: p.x, y: p.y, z: p.z, duration: 0.5, ease: 'power2.inOut' });
+      gsap.to(existing.rotation, { x: p.rx, y: 0, duration: 0.5, ease: 'power2.inOut' });
+      gsap.to(existing.scale, { x: p.scale, y: p.scale, z: p.scale, duration: 0.5, ease: 'power2.inOut' });
     } else {
-      // New card — deal from ceiling
       const mesh = createCardMesh(card, i);
       newCardMeshes.push(mesh);
       gsap.to(mesh.position, {
@@ -1118,7 +1435,6 @@ function syncCards() {
     }
   });
 
-  // Dispose of leftover meshes that are no longer in the room
   existingByKey.forEach(mesh => {
     scene.remove(mesh);
     mesh.geometry.dispose();
@@ -1183,8 +1499,10 @@ const hudActions = document.getElementById('hud-actions');
 const hudLog = document.getElementById('hud-log');
 const overlayContainer = document.getElementById('overlay-container');
 const damageFlash = document.getElementById('damage-flash');
+const curseFlash = document.getElementById('curse-flash');
+const hudRoomCounter = document.getElementById('hud-room-counter');
 
-const ARC_CIRCUMFERENCE = 2 * Math.PI * 17; // ~106.81
+const ARC_CIRCUMFERENCE = 2 * Math.PI * 17;
 
 function updateHUD() {
   const s = state;
@@ -1195,7 +1513,6 @@ function updateHUD() {
   gsap.to(healthArc, { attr: { 'stroke-dashoffset': offset }, duration: 0.5, ease: 'power2.out' });
   healthNumber.textContent = s.health;
 
-  // Health color class
   healthArc.className.baseVal = 'health-wheel-fill';
   if (healthPct > 0.6) healthArc.classList.add('high');
   else if (healthPct > 0.35) healthArc.classList.add('mid');
@@ -1225,6 +1542,9 @@ function updateHUD() {
     hudRoomLabel.textContent = `Play ${remaining} more card${remaining > 1 ? 's' : ''} to advance`;
   }
 
+  // Room counter pips
+  updateRoomPips();
+
   // Flee button
   const canFlee = !s.lastRanAway && s.cardsPlayedThisRoom === 0 && !s.gameOver && s.room.length === 4;
   fleeBtn.disabled = !canFlee;
@@ -1238,12 +1558,35 @@ function updateHUD() {
 
   // Overlays
   updateOverlays();
+
+  // Curse light intensity: brighten if there's an unrevealed curse in the room
+  const hasCurse = s.cursedRoomIndex !== null;
+  const targetCurseLight = hasCurse ? 6 : 0;
+  gsap.to(curseLight, { intensity: targetCurseLight, duration: 1.0 });
+}
+
+function updateRoomPips() {
+  const s = state;
+  const total = TOTAL_ROOMS;
+  const pips = [];
+  for (let i = 0; i < total; i++) {
+    let cls = 'room-pip';
+    if (i < s.roomNumber - 1) cls += ' done';
+    else if (i === s.roomNumber - 1) {
+      // Current room: danger if there's an active curse
+      cls += s.cursedRoomIndex !== null ? ' danger' : ' current';
+    }
+    pips.push(`<div class="${cls}"></div>`);
+  }
+  hudRoomCounter.innerHTML = pips.join('');
 }
 
 function updateActions() {
   const s = state;
   const sel = s.selectedIndex !== null ? s.room[s.selectedIndex] : null;
   const selType = sel ? cardType(sel) : null;
+  const cost = divinationCost();
+  const canDivine = sel && !s.gameOver && s.revealedCurseIndex !== s.selectedIndex && s.health > cost;
 
   let html = '';
 
@@ -1256,11 +1599,19 @@ function updateActions() {
       html += `<button class="btn btn-weapon" onclick="window._playCard(${s.selectedIndex}, 'equip')">Equip ${cardLabel(sel)}</button>`;
     } else if (selType === 'potion') {
       if (!s.potionUsedThisRoom) {
-        const healed = Math.min(sel.rank, s.maxHealth - s.health);
+        let healAmount = sel.rank;
+        if (s.potionCursed) healAmount = Math.floor(healAmount / 2);
+        const healed = Math.min(healAmount, s.maxHealth - s.health);
         html += `<button class="btn btn-heal" onclick="window._playCard(${s.selectedIndex}, 'heal')">Drink Potion (+${healed} HP)</button>`;
       } else {
         html += `<button class="btn" onclick="window._playCard(${s.selectedIndex}, 'discard')">Discard Potion</button>`;
       }
+    }
+
+    // Divination button — always available for unread cards (costs HP)
+    const alreadyRevealed = s.revealedCurseIndex === s.selectedIndex;
+    if (!alreadyRevealed) {
+      html += `<button class="btn btn-curse" ${canDivine ? '' : 'disabled'} onclick="window._divine()" title="Spend ${cost} HP to reveal if this card is cursed">🔮 Divine (\u2212${cost} HP)</button>`;
     }
   }
 
@@ -1309,11 +1660,20 @@ function updateOverlays() {
             <span class="card-icon" style="color:#c44040">\u2665</span>
             <span class="card-desc"><strong>Potions</strong> \u2014 Heal HP equal to the card\u2019s value, up to your max of 20. Only <em>one</em> potion works per room \u2014 any extra must be discarded.</span>
           </div>
+          <h3>Curses ✦</h3>
+          <div class="card-type-row">
+            <span class="card-icon">🔮</span>
+            <span class="card-desc"><strong>Cursed Cards</strong> \u2014 One card per room may carry a hidden hex. Playing it triggers a malevolent effect (extra damage, shattering your weapon, shrinking your max HP, and more). Curses become more common with depth.</span>
+          </div>
+          <div class="card-type-row">
+            <span class="card-icon">🩸</span>
+            <span class="card-desc"><strong>Divination</strong> \u2014 When a card is selected, spend HP to <em>Divine</em> it. This reveals whether it is cursed and, if so, names the hex \u2014 so you can brace for the effect or leave the card for last. The room\u2019s pip on the tracker glows <span style="color:var(--red)">red</span> when a curse lurks nearby.</span>
+          </div>
           <h3>Fleeing</h3>
           <p>You may flee a room before playing any cards \u2014 all 4 cards shuffle back into the deck. You cannot flee two rooms in a row.</p>
           <h3>Winning &amp; Losing</h3>
           <p>Clear every room in the deck to win. If your HP hits 0, the dungeon claims you.</p>
-          <p class="tip">Designed by Zach Gage &amp; Kurt Bieg</p>
+          <p class="tip">Designed by Zach Gage &amp; Kurt Bieg &mdash; curses by the dungeon itself.</p>
           <button class="help-close-btn" onclick="window._toggleHelp()">Got It</button>
         </div>
       </div>`;
@@ -1325,8 +1685,6 @@ function updateOverlays() {
 // ─── EFFECTS ───
 function triggerDamageFlash() {
   gsap.fromTo(damageFlash, { opacity: 0.6 }, { opacity: 0, duration: 0.5, ease: 'power2.out' });
-
-  // Camera shake
   const originalPos = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
   gsap.to(camera.position, {
     x: originalPos.x + 0.08,
@@ -1341,11 +1699,43 @@ function triggerDamageFlash() {
   });
 }
 
-// ─── GLOBAL BINDINGS (for onclick in HTML) ───
+function triggerCurseFlash() {
+  gsap.fromTo(curseFlash, { opacity: 0 }, { opacity: 1, duration: 0.15, ease: 'power2.in',
+    onComplete: () => {
+      gsap.to(curseFlash, { opacity: 0, duration: 0.7, ease: 'power2.out' });
+    }
+  });
+  // Spike the curse light
+  gsap.to(curseLight, { intensity: 30, duration: 0.12, onComplete: () => {
+    gsap.to(curseLight, { intensity: 0, duration: 0.8 });
+  }});
+  // Heavier camera shake
+  const originalPos = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
+  gsap.to(camera.position, {
+    x: originalPos.x - 0.14,
+    y: originalPos.y + 0.06,
+    duration: 0.07,
+    yoyo: true,
+    repeat: 7,
+    ease: 'none',
+    onComplete: () => {
+      camera.position.set(originalPos.x, originalPos.y, originalPos.z);
+    }
+  });
+}
+
+// ─── GLOBAL BINDINGS ───
 window._playCard = playCard;
 window._runAway = runAway;
+window._divine = function() {
+  divineSelectedCard();
+  // Refresh the card's texture to show the reveal marking
+  if (state.revealedCurseIndex !== null) {
+    refreshCardTexture(state.revealedCurseIndex);
+  }
+  updateHUD();
+};
 window._startGame = function() {
-  // Clean up old meshes
   cardMeshes.forEach(mesh => {
     scene.remove(mesh);
     mesh.geometry.dispose();
@@ -1370,7 +1760,6 @@ let time = 0;
 function tick() {
   time += 0.005;
 
-  // Animate particles slowly drifting
   const posArr = particles.geometry.attributes.position.array;
   for (let i = 0; i < particleCount; i++) {
     posArr[i * 3 + 1] += 0.002;
@@ -1379,8 +1768,12 @@ function tick() {
   }
   particles.geometry.attributes.position.needsUpdate = true;
 
-  // Subtle light pulse
   mainLight.intensity = 25 + Math.sin(time * 2) * 2;
+
+  // Curse light — slow sinister pulse when active
+  if (curseLight.intensity > 0.5) {
+    curseLight.intensity += Math.sin(time * 4) * 0.2;
+  }
 
   renderer.render(scene, camera);
 }
@@ -1391,14 +1784,12 @@ document.fonts.ready.then(() => {
   cardBackTexture = generateCardBack();
   initGame();
 
-  // Title flash
   const titleEl = document.getElementById('hud-title');
   gsap.to(titleEl, { opacity: 1, duration: 1, ease: 'power2.out' });
   gsap.to(titleEl, { opacity: 0, duration: 0.8, delay: 2.2, ease: 'power2.in', onComplete: () => {
     titleEl.style.display = 'none';
   }});
 
-  // Delay card dealing for title
   setTimeout(() => {
     syncCards();
     updateHUD();
