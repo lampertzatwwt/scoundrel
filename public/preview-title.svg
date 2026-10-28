@@ -1,0 +1,89 @@
+<svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark background -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0c;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a1a2a;stop-opacity:1" />
+    </linearGradient>
+    <filter id="titleGlow">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <rect width="1200" height="800" fill="url(#bgGradient)"/>
+  
+  <!-- Floating cards background -->
+  <g opacity="0.08">
+    <g transform="translate(150, 100) rotate(-25)">
+      <rect x="0" y="0" width="80" height="120" rx="6" fill="none" stroke="#c9a84c" stroke-width="2"/>
+      <text x="40" y="65" font-family="Cinzel, serif" font-size="40" font-weight="900" 
+            fill="#c9a84c" text-anchor="middle">K</text>
+    </g>
+    <g transform="translate(1050, 150) rotate(20)">
+      <rect x="0" y="0" width="80" height="120" rx="6" fill="none" stroke="#c44040" stroke-width="2"/>
+      <text x="40" y="65" font-family="Cinzel, serif" font-size="40" font-weight="900" 
+            fill="#c44040" text-anchor="middle">9</text>
+    </g>
+    <g transform="translate(200, 650) rotate(15)">
+      <rect x="0" y="0" width="80" height="120" rx="6" fill="none" stroke="#4a9e5a" stroke-width="2"/>
+      <text x="40" y="65" font-family="Cinzel, serif" font-size="40" font-weight="900" 
+            fill="#4a9e5a" text-anchor="middle">5</text>
+    </g>
+    <g transform="translate(950, 600) rotate(-18)">
+      <rect x="0" y="0" width="80" height="120" rx="6" fill="none" stroke="#4a7ec4" stroke-width="2"/>
+      <text x="40" y="65" font-family="Cinzel, serif" font-size="40" font-weight="900" 
+            fill="#4a7ec4" text-anchor="middle">Q</text>
+    </g>
+  </g>
+  
+  <!-- Main Title -->
+  <g transform="translate(600, 200)" filter="url(#titleGlow)">
+    <text x="0" y="0" font-family="Cinzel, serif" font-size="96" font-weight="900" 
+          fill="#c9a84c" text-anchor="middle" letter-spacing="8">SCOUNDREL</text>
+  </g>
+  
+  <!-- Subtitle -->
+  <g transform="translate(600, 280)">
+    <text x="0" y="0" font-family="Cinzel, serif" font-size="24" font-weight="400" 
+          fill="#7a7680" text-anchor="middle" letter-spacing="4">DUNGEON CARD GAME</text>
+  </g>
+  
+  <!-- Decorative line -->
+  <line x1="300" y1="320" x2="900" y2="320" stroke="#c9a84c" stroke-width="1" opacity="0.3"/>
+  
+  <!-- Game Description -->
+  <g transform="translate(600, 400)">
+    <text x="0" y="0" font-family="Crimson Text, serif" font-size="18" 
+          fill="#e8e4dc" text-anchor="middle">Descend through a dungeon of cards</text>
+    <text x="0" y="35" font-family="Crimson Text, serif" font-size="18" 
+          fill="#e8e4dc" text-anchor="middle">Fight monsters, equip weapons, heal wounds</text>
+    <text x="0" y="70" font-family="Crimson Text, serif" font-size="18" 
+          fill="#e8e4dc" text-anchor="middle">Survive all 44 cards to escape with your life</text>
+  </g>
+  
+  <!-- Play Button -->
+  <g transform="translate(600, 550)">
+    <rect x="-80" y="-25" width="160" height="50" rx="8" fill="rgba(201,168,76,0.15)" 
+          stroke="#c9a84c" stroke-width="2"/>
+    <text x="0" y="10" font-family="Cinzel, serif" font-size="20" font-weight="700" 
+          fill="#c9a84c" text-anchor="middle" letter-spacing="2">PLAY</text>
+  </g>
+  
+  <!-- Help Button -->
+  <g transform="translate(600, 630)">
+    <rect x="-60" y="-18" width="120" height="36" rx="6" fill="transparent" 
+          stroke="#7a7680" stroke-width="1.5"/>
+    <text x="0" y="6" font-family="Cinzel, serif" font-size="14" font-weight="700" 
+          fill="#7a7680" text-anchor="middle" letter-spacing="1">HOW TO PLAY</text>
+  </g>
+  
+  <!-- Footer -->
+  <g transform="translate(600, 750)">
+    <text x="0" y="0" font-family="Crimson Text, serif" font-size="12" 
+          fill="#7a7680" text-anchor="middle">A roguelike deck-building experience</text>
+  </g>
+</svg>
