@@ -357,6 +357,116 @@
     margin-top: 4px;
   }
 
+  /* ── MISSIONS PANEL ── */
+  #hud-missions {
+    position: absolute; top: 20px; right: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    max-width: 280px;
+    max-height: 400px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    z-index: 15;
+  }
+  .missions-header {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .missions-header::before {
+    content: '⚔';
+    font-size: 0.9rem;
+  }
+  .mission-item {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 8px;
+    transition: all 0.2s;
+  }
+  .mission-item:hover {
+    border-color: var(--gold-dim);
+    background: rgba(201,168,76,0.05);
+  }
+  .mission-item.completed {
+    border-color: var(--green);
+    background: rgba(74,158,90,0.08);
+  }
+  .mission-title {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+    letter-spacing: 0.05em;
+  }
+  .mission-desc {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+  .mission-progress {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+  .mission-progress-bar {
+    flex: 1;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .mission-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--gold));
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+  .mission-progress-text {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    min-width: 30px;
+    text-align: right;
+  }
+  .mission-reward {
+    font-size: 0.65rem;
+    color: var(--green);
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .mission-reward::before {
+    content: '★';
+    font-size: 0.8rem;
+  }
+  .mission-item.completed .mission-reward {
+    color: var(--gold);
+  }
+  @keyframes mission-complete {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  .mission-item.completing {
+    animation: mission-complete 0.4s ease;
+  }
+
   /* ── MOBILE / PORTRAIT ── */
   @media (max-width: 600px) {
     #hud { padding: 8px; }
@@ -375,6 +485,20 @@
     .deck-value { font-size: 0.9rem; }
     /* Help — beside deck */
     #hud-help { top: 8px; right: 52px; width: 26px; height: 26px; font-size: 0.75rem; }
+    /* Missions — stack below deck on mobile */
+    #hud-missions {
+      top: auto; bottom: auto;
+      top: 50px; right: 8px;
+      max-width: 200px;
+      max-height: 250px;
+      padding: 8px;
+    }
+    .missions-header { font-size: 0.6rem; margin-bottom: 6px; }
+    .mission-item { padding: 6px; margin-bottom: 6px; }
+    .mission-title { font-size: 0.65rem; }
+    .mission-desc { font-size: 0.6rem; }
+    .mission-progress-text { font-size: 0.55rem; }
+    .mission-reward { font-size: 0.55rem; }
     /* Room bar — centered below top HUD */
     #hud-room-bar {
       top: auto; bottom: auto;
@@ -424,6 +548,12 @@
   <div id="hud-deck">
     <div class="deck-label">Deck</div>
     <div class="deck-value" id="deck-value">40</div>
+  </div>
+
+  <!-- Missions Panel -->
+  <div id="hud-missions">
+    <div class="missions-header">Missions</div>
+    <div id="missions-list"></div>
   </div>
 
   <!-- Room Label + Flee -->
@@ -517,6 +647,7 @@ function initGame() {
     gameOver: false,
     won: false,
   };
+  initMissions();
   dealRoom();
 }
 
@@ -546,6 +677,136 @@ function addLog(text, cls = '') {
   if (state.log.length > 50) state.log.shift();
 }
 
+// ─── MISSIONS SYSTEM ───
+let missions = [];
+
+const MISSION_TEMPLATES = [
+  {
+    id: 'monster-slayer',
+    title: 'Monster Slayer',
+    description: 'Defeat 5 monsters',
+    type: 'defeat-monsters',
+    target: 5,
+    reward: { health: 3, text: '+3 HP' },
+    icon: '⚔'
+  },
+  {
+    id: 'treasure-hunter',
+    title: 'Treasure Hunter',
+    description: 'Collect 100 gold',
+    type: 'collect-gold',
+    target: 100,
+    reward: { gold: 50, text: '+50 Gold' },
+    icon: '💰'
+  },
+  {
+    id: 'survivor',
+    title: 'Survivor',
+    description: 'Reach floor 5',
+    type: 'reach-floor',
+    target: 5,
+    reward: { health: 5, text: '+5 HP' },
+    icon: '🛡'
+  },
+  {
+    id: 'weapon-master',
+    title: 'Weapon Master',
+    description: 'Equip 3 weapons',
+    type: 'equip-weapons',
+    target: 3,
+    reward: { weaponBonus: 1, text: '+1 Weapon Rank' },
+    icon: '🗡'
+  },
+  {
+    id: 'potion-expert',
+    title: 'Potion Expert',
+    description: 'Use 4 potions',
+    type: 'use-potions',
+    target: 4,
+    reward: { health: 2, text: '+2 Max HP' },
+    icon: '🧪'
+  },
+  {
+    id: 'card-master',
+    title: 'Card Master',
+    description: 'Play 20 cards',
+    type: 'play-cards',
+    target: 20,
+    reward: { deckBonus: 1, text: '+1 Card Draw' },
+    icon: '🎴'
+  }
+];
+
+function initMissions() {
+  missions = [];
+  // Select 3 random missions
+  const shuffled = shuffle([...MISSION_TEMPLATES]);
+  for (let i = 0; i < 3; i++) {
+    missions.push({
+      ...shuffled[i],
+      progress: 0,
+      completed: false
+    });
+  }
+  updateMissionsUI();
+}
+
+function updateMissionProgress(type, amount = 1) {
+  missions.forEach(mission => {
+    if (!mission.completed && mission.type === type) {
+      mission.progress = Math.min(mission.progress + amount, mission.target);
+      if (mission.progress >= mission.target) {
+        completeMission(mission);
+      }
+    }
+  });
+  updateMissionsUI();
+}
+
+function completeMission(mission) {
+  mission.completed = true;
+  addLog(`Mission Complete: ${mission.title}! ${mission.reward.text}`, 'info');
+  
+  // Apply rewards
+  if (mission.reward.health) {
+    state.health = Math.min(state.health + mission.reward.health, state.maxHealth);
+  }
+  if (mission.reward.maxHealth) {
+    state.maxHealth += mission.reward.maxHealth;
+    state.health = Math.min(state.health + mission.reward.maxHealth, state.maxHealth);
+  }
+  
+  // Trigger animation
+  const missionEl = document.querySelector(`[data-mission-id="${mission.id}"]`);
+  if (missionEl) {
+    missionEl.classList.add('completing');
+    setTimeout(() => missionEl.classList.remove('completing'), 400);
+  }
+}
+
+function updateMissionsUI() {
+  const listEl = document.getElementById('missions-list');
+  if (!listEl) return;
+  
+  listEl.innerHTML = missions.map(mission => {
+    const percent = Math.min(100, (mission.progress / mission.target) * 100);
+    const completed = mission.completed ? 'completed' : '';
+    return `
+      <div class="mission-item ${completed}" data-mission-id="${mission.id}">
+        <div class="mission-title">${mission.title}</div>
+        <div class="mission-desc">${mission.description}</div>
+        <div class="mission-progress">
+          <div class="mission-progress-bar">
+            <div class="mission-progress-fill" style="width: ${percent}%"></div>
+          </div>
+          <div class="mission-progress-text">${mission.progress}/${mission.target}</div>
+        </div>
+        <div class="mission-reward">${mission.reward.text}</div>
+      </div>
+    `;
+  }).join('');
+}
+
 function playCard(index, action) {
   const card = state.room[index];
   if (!card) return;
@@ -559,6 +820,7 @@ function playCard(index, action) {
       state.health -= dmg;
       tookDamage = true;
       addLog(`Fought ${cardLabel(card)} barehanded \u2014 took ${dmg} damage!`, 'damage');
+      updateMissionProgress('defeat-monsters', 1);
     } else if (action === 'weapon') {
       if (!state.weapon) return;
       dmg = Math.max(0, card.rank - state.weapon.rank);
@@ -566,6 +828,7 @@ function playCard(index, action) {
       state.weaponLimit = card.rank;
       tookDamage = dmg > 0;
       addLog(`Fought ${cardLabel(card)} with ${cardLabel(state.weapon)} \u2014 took ${dmg} damage.`, dmg > 0 ? 'damage' : 'info');
+      updateMissionProgress('defeat-monsters', 1);
     }
     if (state.health <= 0) {
       state.health = 0;
@@ -577,12 +840,14 @@ function playCard(index, action) {
     state.weapon = card;
     state.weaponLimit = Infinity;
     addLog(`Equipped ${cardLabel(card)}${oldWeapon ? ' (replaced '+cardLabel(oldWeapon)+')' : ''}.`, 'equip');
+    updateMissionProgress('equip-weapons', 1);
   } else if (type === 'potion') {
     if (!state.potionUsedThisRoom) {
       const healed = Math.min(card.rank, state.maxHealth - state.health);
       state.health += healed;
       state.potionUsedThisRoom = true;
       addLog(`Drank potion ${cardLabel(card)} \u2014 healed ${healed} HP.`, 'heal');
+      updateMissionProgress('use-potions', 1);
     } else {
       addLog(`Discarded ${cardLabel(card)} \u2014 already used a potion this room.`, 'info');
     }
@@ -609,6 +874,9 @@ function playCard(index, action) {
   state.room.splice(index, 1);
   state.cardsPlayedThisRoom++;
   state.selectedIndex = null;
+  
+  // Track card plays for mission
+  updateMissionProgress('play-cards', 1);
 
   // Re-index remaining meshes
   cardMeshes.forEach((m, i) => { m.userData.roomIndex = i; });
@@ -620,6 +888,8 @@ function playCard(index, action) {
     }
     setTimeout(() => {
       dealRoom();
+      // Track floor progression
+      updateMissionProgress('reach-floor', 1);
       if (state.room.length === 0) {
         state.gameOver = true;
         state.won = true;
@@ -1214,6 +1484,9 @@ function updateHUD() {
 
   // Deck
   deckValue.textContent = s.deck.length;
+  
+  // Update missions UI
+  updateMissionsUI();
 
   // Room label
   const remaining = Math.max(0, 3 - s.cardsPlayedThisRoom);
