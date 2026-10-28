@@ -11,4 +11,389 @@ const ACHIEVEMENTS = {
     category: 'combat',
     condition: (stats) => stats.monstersDefeated >= 1,
   },
-  monster_slayer: {\n    id: 'monster_slayer',\n    name: 'Monster Slayer',\n    desc: 'Defeat 10 monsters',\n    icon: '🗡️',\n    category: 'combat',\n    condition: (stats) => stats.monstersDefeated >= 10,\n  },\n  demon_hunter: {\n    id: 'demon_hunter',\n    name: 'Demon Hunter',\n    desc: 'Defeat 25 monsters',\n    icon: '👹',\n    category: 'combat',\n    condition: (stats) => stats.monstersDefeated >= 25,\n  },\n  weapon_master: {\n    id: 'weapon_master',\n    name: 'Weapon Master',\n    desc: 'Use weapons 15 times',\n    icon: '🏹',\n    category: 'combat',\n    condition: (stats) => stats.weaponsUsed >= 15,\n  },\n  bare_knuckle: {\n    id: 'bare_knuckle',\n    name: 'Bare Knuckle',\n    desc: 'Defeat 5 monsters barehanded',\n    icon: '👊',\n    category: 'combat',\n    condition: (stats) => stats.barehandedWins >= 5,\n  },\n  \n  // Healing Achievements\n  first_aid: {\n    id: 'first_aid',\n    name: 'First Aid',\n    desc: 'Use your first potion',\n    icon: '🧪',\n    category: 'healing',\n    condition: (stats) => stats.potionsUsed >= 1,\n  },\n  alchemist: {\n    id: 'alchemist',\n    name: 'Alchemist',\n    desc: 'Use 10 potions',\n    icon: '⚗️',\n    category: 'healing',\n    condition: (stats) => stats.potionsUsed >= 10,\n  },\n  full_recovery: {\n    id: 'full_recovery',\n    name: 'Full Recovery',\n    desc: 'Reach full health',\n    icon: '💚',\n    category: 'healing',\n    condition: (stats) => stats.reachedFullHealth >= 1,\n  },\n  survivor: {\n    id: 'survivor',\n    name: 'Survivor',\n    desc: 'Survive with 1 HP remaining',\n    icon: '🩹',\n    category: 'healing',\n    condition: (stats) => stats.survivedWithLowHealth >= 1,\n  },\n  \n  // Progression Achievements\n  room_clearer: {\n    id: 'room_clearer',\n    name: 'Room Clearer',\n    desc: 'Complete 5 rooms',\n    icon: '🚪',\n    category: 'progression',\n    condition: (stats) => stats.roomsCompleted >= 5,\n  },\n  dungeon_explorer: {\n    id: 'dungeon_explorer',\n    name: 'Dungeon Explorer',\n    desc: 'Complete 15 rooms',\n    icon: '🗺️',\n    category: 'progression',\n    condition: (stats) => stats.roomsCompleted >= 15,\n  },\n  escape_artist: {\n    id: 'escape_artist',\n    name: 'Escape Artist',\n    desc: 'Win a game',\n    icon: '🎉',\n    category: 'progression',\n    condition: (stats) => stats.gamesWon >= 1,\n  },\n  legend: {\n    id: 'legend',\n    name: 'Legend',\n    desc: 'Win 5 games',\n    icon: '👑',\n    category: 'progression',\n    condition: (stats) => stats.gamesWon >= 5,\n  },\n  \n  // Skill Achievements\n  dragon_slayer: {\n    id: 'dragon_slayer',\n    name: 'Dragon Slayer',\n    desc: 'Defeat an Ace (14)',\n    icon: '🐉',\n    category: 'skill',\n    condition: (stats) => stats.defeatedAce >= 1,\n  },\n  king_killer: {\n    id: 'king_killer',\n    name: 'King Killer',\n    desc: 'Defeat a King (13)',\n    icon: '♚',\n    category: 'skill',\n    condition: (stats) => stats.defeatedKing >= 1,\n  },\n  perfect_dodge: {\n    id: 'perfect_dodge',\n    name: 'Perfect Dodge',\n    desc: 'Defeat a monster with 0 damage taken',\n    icon: '🛡️',\n    category: 'skill',\n    condition: (stats) => stats.perfectDodges >= 1,\n  },\n  \n  // Unique Achievements\n  lucky_escape: {\n    id: 'lucky_escape',\n    name: 'Lucky Escape',\n    desc: 'Flee 3 rooms in one game',\n    icon: '🏃',\n    category: 'unique',\n    condition: (stats) => stats.fleeCount >= 3,\n  },\n  iron_will: {\n    id: 'iron_will',\n    name: 'Iron Will',\n    desc: 'Win with 5 HP or less',\n    icon: '⚡',\n    category: 'unique',\n    condition: (stats) => stats.lowHealthVictory >= 1,\n  },\n};\n\n// Mission definitions\nconst MISSIONS = [\n  {\n    id: 'combat_1',\n    name: 'Monster Hunter',\n    desc: 'Defeat 3 monsters',\n    icon: '⚔️',\n    category: 'combat',\n    target: 3,\n    stat: 'monstersDefeated',\n    reward: 10,\n  },\n  {\n    id: 'combat_2',\n    name: 'Weapon Training',\n    desc: 'Use weapons 5 times',\n    icon: '🏹',\n    category: 'combat',\n    target: 5,\n    stat: 'weaponsUsed',\n    reward: 15,\n  },\n  {\n    id: 'healing_1',\n    name: 'Potion Master',\n    desc: 'Use 3 potions',\n    icon: '🧪',\n    category: 'healing',\n    target: 3,\n    stat: 'potionsUsed',\n    reward: 12,\n  },\n  {\n    id: 'healing_2',\n    name: 'Survival Instinct',\n    desc: 'Reach full health once',\n    icon: '💚',\n    category: 'healing',\n    target: 1,\n    stat: 'reachedFullHealth',\n    reward: 20,\n  },\n  {\n    id: 'progress_1',\n    name: 'Room Clearer',\n    desc: 'Complete 3 rooms',\n    icon: '🚪',\n    category: 'progress',\n    target: 3,\n    stat: 'roomsCompleted',\n    reward: 15,\n  },\n  {\n    id: 'progress_2',\n    name: 'Escape the Dungeon',\n    desc: 'Win a game',\n    icon: '🎉',\n    category: 'progress',\n    target: 1,\n    stat: 'gamesWon',\n    reward: 50,\n  },\n];\n\nclass AchievementsMissionsSystem {\n  constructor() {\n    this.stats = this.loadStats();\n    this.unlockedAchievements = new Set(this.loadUnlockedAchievements());\n    this.completedMissions = new Set(this.loadCompletedMissions());\n    this.notificationQueue = [];\n  }\n\n  loadStats() {\n    const saved = localStorage.getItem('scoundrel_stats');\n    return saved ? JSON.parse(saved) : this.getDefaultStats();\n  }\n\n  getDefaultStats() {\n    return {\n      monstersDefeated: 0,\n      weaponsUsed: 0,\n      barehandedWins: 0,\n      potionsUsed: 0,\n      reachedFullHealth: 0,\n      survivedWithLowHealth: 0,\n      roomsCompleted: 0,\n      gamesWon: 0,\n      defeatedAce: 0,\n      defeatedKing: 0,\n      perfectDodges: 0,\n      fleeCount: 0,\n      lowHealthVictory: 0,\n    };\n  }\n\n  loadUnlockedAchievements() {\n    const saved = localStorage.getItem('scoundrel_achievements');\n    return saved ? JSON.parse(saved) : [];\n  }\n\n  loadCompletedMissions() {\n    const saved = localStorage.getItem('scoundrel_missions');\n    return saved ? JSON.parse(saved) : [];\n  }\n\n  saveProgress() {\n    localStorage.setItem('scoundrel_stats', JSON.stringify(this.stats));\n    localStorage.setItem('scoundrel_achievements', JSON.stringify(Array.from(this.unlockedAchievements)));\n    localStorage.setItem('scoundrel_missions', JSON.stringify(Array.from(this.completedMissions)));\n  }\n\n  trackMonsterDefeated(rank, usedWeapon, damageDealt) {\n    this.stats.monstersDefeated++;\n    if (!usedWeapon) this.stats.barehandedWins++;\n    if (damageDealt === 0) this.stats.perfectDodges++;\n    if (rank === 14) this.stats.defeatedAce++;\n    if (rank === 13) this.stats.defeatedKing++;\n    this.checkAchievements();\n    this.checkMissions();\n  }\n\n  trackWeaponUsed() {\n    this.stats.weaponsUsed++;\n    this.checkAchievements();\n    this.checkMissions();\n  }\n\n  trackPotionUsed() {\n    this.stats.potionsUsed++;\n    this.checkAchievements();\n    this.checkMissions();\n  }\n\n  trackHealthFull() {\n    this.stats.reachedFullHealth++;\n    this.checkAchievements();\n    this.checkMissions();\n  }\n\n  trackLowHealthSurvival() {\n    this.stats.survivedWithLowHealth++;\n    this.checkAchievements();\n  }\n\n  trackRoomCompleted() {\n    this.stats.roomsCompleted++;\n    this.checkAchievements();\n    this.checkMissions();\n  }\n\n  trackGameWon(finalHealth) {\n    this.stats.gamesWon++;\n    if (finalHealth <= 5) this.stats.lowHealthVictory++;\n    this.checkAchievements();\n    this.checkMissions();\n  }\n\n  trackFlee() {\n    this.stats.fleeCount++;\n    this.checkAchievements();\n  }\n\n  checkAchievements() {\n    for (const [id, achievement] of Object.entries(ACHIEVEMENTS)) {\n      if (!this.unlockedAchievements.has(id) && achievement.condition(this.stats)) {\n        this.unlockAchievement(id);\n      }\n    }\n  }\n\n  checkMissions() {\n    for (const mission of MISSIONS) {\n      if (!this.completedMissions.has(mission.id)) {\n        const progress = this.stats[mission.stat] || 0;\n        if (progress >= mission.target) {\n          this.completeMission(mission.id);\n        }\n      }\n    }\n  }\n\n  unlockAchievement(id) {\n    this.unlockedAchievements.add(id);\n    const achievement = ACHIEVEMENTS[id];\n    this.notificationQueue.push({\n      type: 'achievement',\n      achievement,\n    });\n    this.saveProgress();\n  }\n\n  completeMission(id) {\n    this.completedMissions.add(id);\n    const mission = MISSIONS.find(m => m.id === id);\n    this.notificationQueue.push({\n      type: 'mission',\n      mission,\n    });\n    this.saveProgress();\n  }\n\n  getNotification() {\n    return this.notificationQueue.shift();\n  }\n\n  getStats() {\n    return {\n      totalAchievements: Object.keys(ACHIEVEMENTS).length,\n      unlockedCount: this.unlockedAchievements.size,\n      completionPercent: Math.round((this.unlockedAchievements.size / Object.keys(ACHIEVEMENTS).length) * 100),\n      totalMissions: MISSIONS.length,\n      completedMissionsCount: this.completedMissions.size,\n    };\n  }\n\n  getAchievementsList() {\n    return Object.entries(ACHIEVEMENTS).map(([id, ach]) => ({\n      ...ach,\n      unlocked: this.unlockedAchievements.has(id),\n    }));\n  }\n\n  getMissionsList() {\n    return MISSIONS.map(mission => ({\n      ...mission,\n      completed: this.completedMissions.has(mission.id),\n      progress: this.stats[mission.stat] || 0,\n      progressPercent: Math.min(100, Math.round(((this.stats[mission.stat] || 0) / mission.target) * 100)),\n    }));\n  }\n\n  resetSession() {\n    this.stats.fleeCount = 0;\n  }\n}\n\n// Export for use in main script\nwindow.AchievementsMissionsSystem = AchievementsMissionsSystem;\nwindow.ACHIEVEMENTS = ACHIEVEMENTS;\nwindow.MISSIONS = MISSIONS;\n
+  monster_slayer: {
+    id: 'monster_slayer',
+    name: 'Monster Slayer',
+    desc: 'Defeat 10 monsters',
+    icon: '🗡️',
+    category: 'combat',
+    condition: (stats) => stats.monstersDefeated >= 10,
+  },
+  demon_hunter: {
+    id: 'demon_hunter',
+    name: 'Demon Hunter',
+    desc: 'Defeat 25 monsters',
+    icon: '👹',
+    category: 'combat',
+    condition: (stats) => stats.monstersDefeated >= 25,
+  },
+  weapon_master: {
+    id: 'weapon_master',
+    name: 'Weapon Master',
+    desc: 'Use weapons 15 times',
+    icon: '🏹',
+    category: 'combat',
+    condition: (stats) => stats.weaponsUsed >= 15,
+  },
+  bare_knuckle: {
+    id: 'bare_knuckle',
+    name: 'Bare Knuckle',
+    desc: 'Defeat 5 monsters barehanded',
+    icon: '👊',
+    category: 'combat',
+    condition: (stats) => stats.barehandedWins >= 5,
+  },
+
+  // Healing Achievements
+  first_aid: {
+    id: 'first_aid',
+    name: 'First Aid',
+    desc: 'Use your first potion',
+    icon: '🧪',
+    category: 'healing',
+    condition: (stats) => stats.potionsUsed >= 1,
+  },
+  alchemist: {
+    id: 'alchemist',
+    name: 'Alchemist',
+    desc: 'Use 10 potions',
+    icon: '⚗️',
+    category: 'healing',
+    condition: (stats) => stats.potionsUsed >= 10,
+  },
+  full_recovery: {
+    id: 'full_recovery',
+    name: 'Full Recovery',
+    desc: 'Reach full health',
+    icon: '💚',
+    category: 'healing',
+    condition: (stats) => stats.reachedFullHealth >= 1,
+  },
+  survivor: {
+    id: 'survivor',
+    name: 'Survivor',
+    desc: 'Survive with 1 HP remaining',
+    icon: '🩹',
+    category: 'healing',
+    condition: (stats) => stats.survivedWithLowHealth >= 1,
+  },
+
+  // Progression Achievements
+  room_clearer: {
+    id: 'room_clearer',
+    name: 'Room Clearer',
+    desc: 'Complete 5 rooms',
+    icon: '🚪',
+    category: 'progression',
+    condition: (stats) => stats.roomsCompleted >= 5,
+  },
+  dungeon_explorer: {
+    id: 'dungeon_explorer',
+    name: 'Dungeon Explorer',
+    desc: 'Complete 15 rooms',
+    icon: '🗺️',
+    category: 'progression',
+    condition: (stats) => stats.roomsCompleted >= 15,
+  },
+  escape_artist: {
+    id: 'escape_artist',
+    name: 'Escape Artist',
+    desc: 'Win a game',
+    icon: '🎉',
+    category: 'progression',
+    condition: (stats) => stats.gamesWon >= 1,
+  },
+  legend: {
+    id: 'legend',
+    name: 'Legend',
+    desc: 'Win 5 games',
+    icon: '👑',
+    category: 'progression',
+    condition: (stats) => stats.gamesWon >= 5,
+  },
+
+  // Skill Achievements
+  dragon_slayer: {
+    id: 'dragon_slayer',
+    name: 'Dragon Slayer',
+    desc: 'Defeat an Ace (14)',
+    icon: '🐉',
+    category: 'skill',
+    condition: (stats) => stats.defeatedAce >= 1,
+  },
+  king_killer: {
+    id: 'king_killer',
+    name: 'King Killer',
+    desc: 'Defeat a King (13)',
+    icon: '♚',
+    category: 'skill',
+    condition: (stats) => stats.defeatedKing >= 1,
+  },
+  perfect_dodge: {
+    id: 'perfect_dodge',
+    name: 'Perfect Dodge',
+    desc: 'Defeat a monster with 0 damage taken',
+    icon: '🛡️',
+    category: 'skill',
+    condition: (stats) => stats.perfectDodges >= 1,
+  },
+
+  // Unique Achievements
+  lucky_escape: {
+    id: 'lucky_escape',
+    name: 'Lucky Escape',
+    desc: 'Flee 3 rooms in one game',
+    icon: '🏃',
+    category: 'unique',
+    condition: (stats) => stats.fleeCount >= 3,
+  },
+  iron_will: {
+    id: 'iron_will',
+    name: 'Iron Will',
+    desc: 'Win with 5 HP or less',
+    icon: '⚡',
+    category: 'unique',
+    condition: (stats) => stats.lowHealthVictory >= 1,
+  },
+};
+
+// Mission definitions
+const MISSIONS = [
+  {
+    id: 'combat_1',
+    name: 'Monster Hunter',
+    desc: 'Defeat 3 monsters',
+    icon: '⚔️',
+    category: 'combat',
+    target: 3,
+    stat: 'monstersDefeated',
+    reward: 10,
+  },
+  {
+    id: 'combat_2',
+    name: 'Weapon Training',
+    desc: 'Use weapons 5 times',
+    icon: '🏹',
+    category: 'combat',
+    target: 5,
+    stat: 'weaponsUsed',
+    reward: 15,
+  },
+  {
+    id: 'healing_1',
+    name: 'Potion Master',
+    desc: 'Use 3 potions',
+    icon: '🧪',
+    category: 'healing',
+    target: 3,
+    stat: 'potionsUsed',
+    reward: 12,
+  },
+  {
+    id: 'healing_2',
+    name: 'Survival Instinct',
+    desc: 'Reach full health once',
+    icon: '💚',
+    category: 'healing',
+    target: 1,
+    stat: 'reachedFullHealth',
+    reward: 20,
+  },
+  {
+    id: 'progress_1',
+    name: 'Room Clearer',
+    desc: 'Complete 3 rooms',
+    icon: '🚪',
+    category: 'progress',
+    target: 3,
+    stat: 'roomsCompleted',
+    reward: 15,
+  },
+  {
+    id: 'progress_2',
+    name: 'Escape the Dungeon',
+    desc: 'Win a game',
+    icon: '🎉',
+    category: 'progress',
+    target: 1,
+    stat: 'gamesWon',
+    reward: 50,
+  },
+];
+
+class AchievementsMissionsSystem {
+  constructor() {
+    this.stats = this.loadStats();
+    this.unlockedAchievements = new Set(this.loadUnlockedAchievements());
+    this.completedMissions = new Set(this.loadCompletedMissions());
+    this.notificationQueue = [];
+  }
+
+  loadStats() {
+    const saved = localStorage.getItem('scoundrel_stats');
+    return saved ? JSON.parse(saved) : this.getDefaultStats();
+  }
+
+  getDefaultStats() {
+    return {
+      monstersDefeated: 0,
+      weaponsUsed: 0,
+      barehandedWins: 0,
+      potionsUsed: 0,
+      reachedFullHealth: 0,
+      survivedWithLowHealth: 0,
+      roomsCompleted: 0,
+      gamesWon: 0,
+      defeatedAce: 0,
+      defeatedKing: 0,
+      perfectDodges: 0,
+      fleeCount: 0,
+      lowHealthVictory: 0,
+    };
+  }
+
+  loadUnlockedAchievements() {
+    const saved = localStorage.getItem('scoundrel_achievements');
+    return saved ? JSON.parse(saved) : [];
+  }
+
+  loadCompletedMissions() {
+    const saved = localStorage.getItem('scoundrel_missions');
+    return saved ? JSON.parse(saved) : [];
+  }
+
+  saveProgress() {
+    localStorage.setItem('scoundrel_stats', JSON.stringify(this.stats));
+    localStorage.setItem('scoundrel_achievements', JSON.stringify(Array.from(this.unlockedAchievements)));
+    localStorage.setItem('scoundrel_missions', JSON.stringify(Array.from(this.completedMissions)));
+  }
+
+  trackMonsterDefeated(rank, usedWeapon, damageDealt) {
+    this.stats.monstersDefeated++;
+    if (!usedWeapon) this.stats.barehandedWins++;
+    if (damageDealt === 0) this.stats.perfectDodges++;
+    if (rank === 14) this.stats.defeatedAce++;
+    if (rank === 13) this.stats.defeatedKing++;
+    this.checkAchievements();
+    this.checkMissions();
+  }
+
+  trackWeaponUsed() {
+    this.stats.weaponsUsed++;
+    this.checkAchievements();
+    this.checkMissions();
+  }
+
+  trackPotionUsed() {
+    this.stats.potionsUsed++;
+    this.checkAchievements();
+    this.checkMissions();
+  }
+
+  trackHealthFull() {
+    this.stats.reachedFullHealth++;
+    this.checkAchievements();
+    this.checkMissions();
+  }
+
+  trackLowHealthSurvival() {
+    this.stats.survivedWithLowHealth++;
+    this.checkAchievements();
+  }
+
+  trackRoomCompleted() {
+    this.stats.roomsCompleted++;
+    this.checkAchievements();
+    this.checkMissions();
+  }
+
+  trackGameWon(finalHealth) {
+    this.stats.gamesWon++;
+    if (finalHealth <= 5) this.stats.lowHealthVictory++;
+    this.checkAchievements();
+    this.checkMissions();
+  }
+
+  trackFlee() {
+    this.stats.fleeCount++;
+    this.checkAchievements();
+  }
+
+  checkAchievements() {
+    for (const [id, achievement] of Object.entries(ACHIEVEMENTS)) {
+      if (!this.unlockedAchievements.has(id) && achievement.condition(this.stats)) {
+        this.unlockAchievement(id);
+      }
+    }
+  }
+
+  checkMissions() {
+    for (const mission of MISSIONS) {
+      if (!this.completedMissions.has(mission.id)) {
+        const progress = this.stats[mission.stat] || 0;
+        if (progress >= mission.target) {
+          this.completeMission(mission.id);
+        }
+      }
+    }
+  }
+
+  unlockAchievement(id) {
+    this.unlockedAchievements.add(id);
+    const achievement = ACHIEVEMENTS[id];
+    this.notificationQueue.push({
+      type: 'achievement',
+      achievement,
+    });
+    this.saveProgress();
+  }
+
+  completeMission(id) {
+    this.completedMissions.add(id);
+    const mission = MISSIONS.find(m => m.id === id);
+    this.notificationQueue.push({
+      type: 'mission',
+      mission,
+    });
+    this.saveProgress();
+  }
+
+  getNotification() {
+    return this.notificationQueue.shift();
+  }
+
+  getStats() {
+    return {
+      totalAchievements: Object.keys(ACHIEVEMENTS).length,
+      unlockedCount: this.unlockedAchievements.size,
+      completionPercent: Math.round((this.unlockedAchievements.size / Object.keys(ACHIEVEMENTS).length) * 100),
+      totalMissions: MISSIONS.length,
+      completedMissionsCount: this.completedMissions.size,
+    };
+  }
+
+  getAchievementsList() {
+    return Object.entries(ACHIEVEMENTS).map(([id, ach]) => ({
+      ...ach,
+      unlocked: this.unlockedAchievements.has(id),
+    }));
+  }
+
+  getMissionsList() {
+    return MISSIONS.map(mission => ({
+      ...mission,
+      completed: this.completedMissions.has(mission.id),
+      progress: this.stats[mission.stat] || 0,
+      progressPercent: Math.min(100, Math.round(((this.stats[mission.stat] || 0) / mission.target) * 100)),
+    }));
+  }
+
+  resetSession() {
+    this.stats.fleeCount = 0;
+  }
+}
+
+// Export for use in main script
+window.AchievementsMissionsSystem = AchievementsMissionsSystem;
+window.ACHIEVEMENTS = ACHIEVEMENTS;
+window.MISSIONS = MISSIONS;
