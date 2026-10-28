@@ -1,0 +1,86 @@
+<svg viewBox="0 0 1200 800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Dark background -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a0c;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a1a2a;stop-opacity:1" />
+    </linearGradient>
+    <filter id="victoryGlow">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <rect width="1200" height="800" fill="url(#bgGradient)"/>
+  
+  <!-- Celebratory stars/sparkles -->
+  <g opacity="0.6" fill="#c9a84c">
+    <circle cx="200" cy="150" r="3"/>
+    <circle cx="1000" cy="200" r="2"/>
+    <circle cx="150" cy="500" r="2.5"/>
+    <circle cx="1050" cy="450" r="3"/>
+    <circle cx="300" cy="700" r="2"/>
+    <circle cx="900" cy="650" r="2.5"/>
+  </g>
+  
+  <!-- Victory Title -->
+  <g transform="translate(600, 150)" filter="url(#victoryGlow)">
+    <text x="0" y="0" font-family="Cinzel, serif" font-size="80" font-weight="900" 
+          fill="#4a9e5a" text-anchor="middle" letter-spacing="4">VICTORY</text>
+  </g>
+  
+  <!-- Subtitle -->
+  <g transform="translate(600, 240)">
+    <text x="0" y="0" font-family="Cinzel, serif" font-size="20" font-weight="400" 
+          fill="#7a7680" text-anchor="middle" letter-spacing="2">YOU ESCAPED THE DUNGEON</text>
+  </g>
+  
+  <!-- Stats Box -->
+  <g transform="translate(600, 380)">
+    <rect x="-200" y="-80" width="400" height="160" rx="8" fill="rgba(19,19,26,0.85)" 
+          stroke="#2a2a3a" stroke-width="1"/>
+    
+    <!-- Health Remaining -->
+    <text x="-180" y="-50" font-family="Cinzel, serif" font-size="14" font-weight="700" 
+          fill="#7a7680" letter-spacing="1">HEALTH REMAINING</text>
+    <text x="-180" y="-25" font-family="Cinzel, serif" font-size="32" font-weight="900" 
+          fill="#4a9e5a">8 / 20 HP</text>
+    
+    <!-- Rooms Cleared -->
+    <text x="20" y="-50" font-family="Cinzel, serif" font-size="14" font-weight="700" 
+          fill="#7a7680" letter-spacing="1">ROOMS CLEARED</text>
+    <text x="20" y="-25" font-family="Cinzel, serif" font-size="32" font-weight="900" 
+          fill="#4a7ec4">11 / 11</text>
+    
+    <!-- Cards Played -->
+    <text x="-180" y="30" font-family="Cinzel, serif" font-size="14" font-weight="700" 
+          fill="#7a7680" letter-spacing="1">CARDS PLAYED</text>
+    <text x="-180" y="55" font-family="Cinzel, serif" font-size="32" font-weight="900" 
+          fill="#c9a84c">33 / 44</text>
+    
+    <!-- Best Weapon -->
+    <text x="20" y="30" font-family="Cinzel, serif" font-size="14" font-weight="700" 
+          fill="#7a7680" letter-spacing="1">BEST WEAPON</text>
+    <text x="20" y="55" font-family="Cinzel, serif" font-size="32" font-weight="900" 
+          fill="#c44040">K♦</text>
+  </g>
+  
+  <!-- Play Again Button -->
+  <g transform="translate(600, 600)">
+    <rect x="-100" y="-25" width="200" height="50" rx="8" fill="rgba(201,168,76,0.15)" 
+          stroke="#c9a84c" stroke-width="2"/>
+    <text x="0" y="10" font-family="Cinzel, serif" font-size="18" font-weight="700" 
+          fill="#c9a84c" text-anchor="middle" letter-spacing="2">PLAY AGAIN</text>
+  </g>
+  
+  <!-- Menu Button -->
+  <g transform="translate(600, 680)">
+    <rect x="-70" y="-18" width="140" height="36" rx="6" fill="transparent" 
+          stroke="#7a7680" stroke-width="1.5"/>
+    <text x="0" y="6" font-family="Cinzel, serif" font-size="14" font-weight="700" 
+          fill="#7a7680" text-anchor="middle" letter-spacing="1">MAIN MENU</text>
+  </g>
+</svg>
