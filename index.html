@@ -335,6 +335,121 @@
     box-shadow: 0 0 15px rgba(201,168,76,0.2);
   }
 
+  /* Achievements Modal */
+  .achievements-overlay {
+    position: fixed; inset: 0;
+    background: rgba(5,5,8,0.92);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    backdrop-filter: blur(8px);
+    animation: fadeIn 0.3s ease;
+    padding: 20px;
+  }
+  .achievements-modal {
+    background: rgba(19,19,26,0.95);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    max-width: 600px; width: 100%;
+    max-height: 80vh; overflow-y: auto;
+    padding: 28px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .achievements-modal h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.4rem; font-weight: 900;
+    color: var(--gold);
+    letter-spacing: 0.1em;
+    margin-bottom: 16px; text-align: center;
+  }
+  .achievements-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px; margin-bottom: 20px;
+  }
+  .achievement-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .achievement-card:hover {
+    border-color: var(--gold);
+    box-shadow: 0 0 12px rgba(201,168,76,0.1);
+  }
+  .achievement-card.locked {
+    opacity: 0.5;
+  }
+  .achievement-icon {
+    font-size: 2rem; margin-bottom: 6px;
+  }
+  .achievement-name {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem; font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    line-height: 1.2;
+  }
+  .achievement-desc {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    line-height: 1.3;
+  }
+  .achievement-card.locked .achievement-name {
+    color: var(--text-dim);
+  }
+  .achievement-card.locked .achievement-icon {
+    opacity: 0.3;
+  }
+  .achievement-stats {
+    background: rgba(255,255,255,0.02);
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+    margin-top: 16px;
+    font-size: 0.85rem;
+    color: var(--text-dim);
+    text-align: center;
+  }
+  .achievements-close-btn {
+    display: block; margin: 20px auto 0;
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 10px 28px; border-radius: 6px;
+    border: 1.5px solid var(--gold-dim);
+    background: transparent; color: var(--gold);
+    cursor: pointer; transition: all 0.2s;
+  }
+  .achievements-close-btn:hover {
+    border-color: var(--gold);
+    box-shadow: 0 0 15px rgba(201,168,76,0.2);
+  }
+
+  /* Achievements Button */
+  #hud-achievements {
+    position: absolute; top: 20px; right: 20px;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--gold-dim);
+    font-family: 'Cinzel', serif;
+    font-size: 1rem; font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(8px);
+  }
+  #hud-achievements:hover {
+    border-color: var(--gold); color: var(--gold);
+    box-shadow: 0 0 12px rgba(201,168,76,0.2);
+  }
+
   /* Title */
   #hud-title {
     position: absolute; top: 50%; left: 50%;
@@ -375,6 +490,8 @@
     .deck-value { font-size: 0.9rem; }
     /* Help — beside deck */
     #hud-help { top: 8px; right: 52px; width: 26px; height: 26px; font-size: 0.75rem; }
+    /* Achievements — beside help */
+    #hud-achievements { top: 8px; right: 8px; width: 26px; height: 26px; font-size: 0.75rem; }
     /* Room bar — centered below top HUD */
     #hud-room-bar {
       top: auto; bottom: auto;
@@ -434,6 +551,9 @@
 
   <!-- Help -->
   <button id="hud-help" title="How to Play">?</button>
+
+  <!-- Achievements -->
+  <button id="hud-achievements" title="Achievements">★</button>
 
   <!-- Actions -->
   <div id="hud-actions"></div>
@@ -499,6 +619,111 @@ function cardLabel(c) {
 
 let state = {};
 let showHelp = false;
+let showAchievements = false;
+
+// ─── ACHIEVEMENTS SYSTEM ───
+const ACHIEVEMENTS = {
+  firstVictory: {
+    id: 'firstVictory',
+    name: 'Escape Artist',
+    icon: '🚪',
+    description: 'Win your first game',
+    condition: (stats) => stats.wins >= 1,
+  },
+  perfectRun: {
+    id: 'perfectRun',
+    name: 'Unscathed',
+    icon: '❤️',
+    description: 'Win without taking damage',
+    condition: (stats) => stats.perfectRuns >= 1,
+  },
+  weaponMaster: {
+    id: 'weaponMaster',
+    name: 'Weapon Master',
+    icon: '⚔️',
+    description: 'Equip 5 different weapons in one run',
+    condition: (stats) => stats.maxWeaponsInRun >= 5,
+  },
+  potionCollector: {
+    id: 'potionCollector',
+    name: 'Alchemist',
+    icon: '🧪',
+    description: 'Use 10 potions across all games',
+    condition: (stats) => stats.potionsUsed >= 10,
+  },
+  highRoller: {
+    id: 'highRoller',
+    name: 'High Roller',
+    icon: '🎲',
+    description: 'Win with 15+ HP remaining',
+    condition: (stats) => stats.highHealthWins >= 1,
+  },
+  tenVictories: {
+    id: 'tenVictories',
+    name: 'Veteran',
+    icon: '👑',
+    description: 'Win 10 games',
+    condition: (stats) => stats.wins >= 10,
+  },
+  fleeArtist: {
+    id: 'fleeArtist',
+    name: 'Coward',
+    icon: '🏃',
+    description: 'Flee 5 times across all games',
+    condition: (stats) => stats.totalFlees >= 5,
+  },
+  barehanded: {
+    id: 'barehanded',
+    name: 'Bare Knuckle',
+    icon: '👊',
+    description: 'Win a game without equipping any weapons',
+    condition: (stats) => stats.barehanded >= 1,
+  },
+};
+
+function loadAchievementStats() {
+  const saved = localStorage.getItem('scoundrelAchievementStats');
+  if (saved) {
+    return JSON.parse(saved);
+  }
+  return {
+    wins: 0,
+    perfectRuns: 0,
+    maxWeaponsInRun: 0,
+    potionsUsed: 0,
+    highHealthWins: 0,
+    totalFlees: 0,
+    barehanded: 0,
+    unlockedAchievements: [],
+  };
+}
+
+function saveAchievementStats(stats) {
+  localStorage.setItem('scoundrelAchievementStats', JSON.stringify(stats));
+}
+
+function getUnlockedAchievements(stats) {
+  return Object.values(ACHIEVEMENTS).filter(ach => ach.condition(stats));
+}
+
+function checkAndUnlockAchievements(stats) {
+  const unlockedIds = new Set(stats.unlockedAchievements);
+  const newUnlocks = [];
+  
+  Object.values(ACHIEVEMENTS).forEach(ach => {
+    if (!unlockedIds.has(ach.id) && ach.condition(stats)) {
+      unlockedIds.add(ach.id);
+      newUnlocks.push(ach);
+    }
+  });
+  
+  stats.unlockedAchievements = Array.from(unlockedIds);
+  saveAchievementStats(stats);
+  
+  return newUnlocks;
+}
+
+let achievementStats = loadAchievementStats();
 
 function initGame() {
   const deck = shuffle(makeDeck());
@@ -516,6 +741,10 @@ function initGame() {
     log: [{ text: 'You descend into the dungeon...', cls: 'info' }],
     gameOver: false,
     won: false,
+    weaponsEquippedThisRun: 0,
+    potionsUsedThisRun: 0,
+    fleesThisRun: 0,
+    startingHealth: 20,
   };
   dealRoom();
 }
@@ -576,12 +805,14 @@ function playCard(index, action) {
     const oldWeapon = state.weapon;
     state.weapon = card;
     state.weaponLimit = Infinity;
+    state.weaponsEquippedThisRun++;
     addLog(`Equipped ${cardLabel(card)}${oldWeapon ? ' (replaced '+cardLabel(oldWeapon)+')' : ''}.`, 'equip');
   } else if (type === 'potion') {
     if (!state.potionUsedThisRoom) {
       const healed = Math.min(card.rank, state.maxHealth - state.health);
       state.health += healed;
       state.potionUsedThisRoom = true;
+      state.potionsUsedThisRun++;
       addLog(`Drank potion ${cardLabel(card)} \u2014 healed ${healed} HP.`, 'heal');
     } else {
       addLog(`Discarded ${cardLabel(card)} \u2014 already used a potion this room.`, 'info');
@@ -643,6 +874,7 @@ function runAway() {
     state.deck.unshift(state.room.pop());
   }
   state.lastRanAway = true;
+  state.fleesThisRun++;
   addLog('You fled the room...', 'info');
 
   // Animate all cards out
@@ -1278,12 +1510,37 @@ function updateLog() {
 
 function updateOverlays() {
   if (state.gameOver) {
+    // Track achievements on game end
+    if (state.won) {
+      achievementStats.wins++;
+      if (state.health === state.startingHealth) {
+        achievementStats.perfectRuns++;
+      }
+      if (state.health >= 15) {
+        achievementStats.highHealthWins++;
+      }
+      if (state.weaponsEquippedThisRun === 0) {
+        achievementStats.barehanded++;
+      }
+      achievementStats.maxWeaponsInRun = Math.max(achievementStats.maxWeaponsInRun, state.weaponsEquippedThisRun);
+    }
+    achievementStats.potionsUsed += state.potionsUsedThisRun;
+    achievementStats.totalFlees += state.fleesThisRun;
+    
+    const newUnlocks = checkAndUnlockAchievements(achievementStats);
+    const unlocksHtml = newUnlocks.length > 0 
+      ? `<div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 0.9rem; color: var(--gold);">
+          🏆 ${newUnlocks.map(a => a.name).join(', ')} unlocked!
+         </div>`
+      : '';
+    
     overlayContainer.innerHTML = `
       <div class="overlay">
         <h2 style="color: ${state.won ? 'var(--gold)' : 'var(--red)'}">
           ${state.won ? 'Victory' : 'Defeated'}
         </h2>
         <div class="result-msg">${state.won ? `You escaped the dungeon with ${state.health} HP!` : 'The dungeon has claimed another soul.'}</div>
+        ${unlocksHtml}
         <button class="btn" onclick="window._startGame()">Play Again</button>
       </div>`;
   } else if (showHelp) {
@@ -1315,6 +1572,33 @@ function updateOverlays() {
           <p>Clear every room in the deck to win. If your HP hits 0, the dungeon claims you.</p>
           <p class="tip">Designed by Zach Gage &amp; Kurt Bieg</p>
           <button class="help-close-btn" onclick="window._toggleHelp()">Got It</button>
+        </div>
+      </div>`;
+  } else if (showAchievements) {
+    const unlockedIds = new Set(achievementStats.unlockedAchievements);
+    const achievementCards = Object.values(ACHIEVEMENTS).map(ach => {
+      const isUnlocked = unlockedIds.has(ach.id);
+      return `
+        <div class="achievement-card ${isUnlocked ? '' : 'locked'}">
+          <div class="achievement-icon">${ach.icon}</div>
+          <div class="achievement-name">${ach.name}</div>
+          <div class="achievement-desc">${ach.description}</div>
+        </div>
+      `;
+    }).join('');
+    
+    overlayContainer.innerHTML = `
+      <div class="achievements-overlay" onclick="window._toggleAchievements()">
+        <div class="achievements-modal" onclick="event.stopPropagation()">
+          <h2>Achievements</h2>
+          <div class="achievements-grid">
+            ${achievementCards}
+          </div>
+          <div class="achievement-stats">
+            <div>Wins: ${achievementStats.wins} | Potions Used: ${achievementStats.potionsUsed} | Flees: ${achievementStats.totalFlees}</div>
+            <div>Unlocked: ${unlockedIds.size} / ${Object.keys(ACHIEVEMENTS).length}</div>
+          </div>
+          <button class="achievements-close-btn" onclick="window._toggleAchievements()">Close</button>
         </div>
       </div>`;
   } else {
@@ -1359,10 +1643,17 @@ window._startGame = function() {
 };
 window._toggleHelp = function() {
   showHelp = !showHelp;
+  showAchievements = false;
+  updateOverlays();
+};
+window._toggleAchievements = function() {
+  showAchievements = !showAchievements;
+  showHelp = false;
   updateOverlays();
 };
 
 document.getElementById('hud-help').addEventListener('click', window._toggleHelp);
+document.getElementById('hud-achievements').addEventListener('click', window._toggleAchievements);
 document.getElementById('flee-btn').addEventListener('click', window._runAway);
 
 // ─── ANIMATION LOOP ───
