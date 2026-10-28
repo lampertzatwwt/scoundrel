@@ -5,7 +5,7 @@ A roguelike deck-building game where you descend through a dungeon made of playi
 ## Preview
 
 ### Gameplay
-![Gameplay Screenshot](public/preview-gameplay.svg)
+![Gameplay Screenshot](https://raw.githubusercontent.com/lampertzatwwt/scoundrel/main/public/preview-gameplay.svg)
 
 The main game interface shows:
 - **Health Wheel** (top-left): Your current HP with color-coded status
@@ -17,7 +17,7 @@ The main game interface shows:
 - **Game Log** (bottom-left): Recent actions and events
 
 ### Title Screen
-![Title Screen](public/preview-title.svg)
+![Title Screen](https://raw.githubusercontent.com/lampertzatwwt/scoundrel/main/public/preview-title.svg)
 
 The starting screen with:
 - Game title and tagline
@@ -25,7 +25,7 @@ The starting screen with:
 - How to Play button for rules and tips
 
 ### Victory Screen
-![Victory Screen](public/preview-victory.svg)
+![Victory Screen](https://raw.githubusercontent.com/lampertzatwwt/scoundrel/main/public/preview-victory.svg)
 
 Displayed when you successfully escape the dungeon:
 - Final stats: Health remaining, rooms cleared, cards played, best weapon
@@ -33,7 +33,7 @@ Displayed when you successfully escape the dungeon:
 - Main Menu button
 
 ### Defeat Screen
-![Defeat Screen](public/preview-defeat.svg)
+![Defeat Screen](https://raw.githubusercontent.com/lampertzatwwt/scoundrel/main/public/preview-defeat.svg)
 
 Shown when your health reaches zero:
 - Defeat message and final enemy
@@ -42,7 +42,7 @@ Shown when your health reaches zero:
 - Main Menu button
 
 ### Mobile View
-![Mobile Preview](public/preview-mobile.svg)
+![Mobile Preview](https://raw.githubusercontent.com/lampertzatwwt/scoundrel/main/public/preview-mobile.svg)
 
 Responsive design for phones (portrait orientation):
 - Compact HUD elements
