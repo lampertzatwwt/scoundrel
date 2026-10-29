@@ -335,6 +335,92 @@
     box-shadow: 0 0 15px rgba(201,168,76,0.2);
   }
 
+  /* Achievements Button */
+  #hud-achievements {
+    position: absolute; top: 20px; right: 114px;
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--gold-dim);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(8px);
+  }
+  #hud-achievements:hover {
+    border-color: var(--gold); color: var(--gold);
+    box-shadow: 0 0 12px rgba(201,168,76,0.2);
+  }
+
+  /* Achievements Modal */
+  .ach-progress {
+    text-align: center;
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem !important;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    margin-bottom: 12px !important;
+  }
+  .ach-row {
+    display: flex; align-items: center; gap: 10px;
+    margin: 8px 0; padding: 8px 12px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.03);
+    transition: opacity 0.2s;
+  }
+  .ach-row.unlocked { border-color: rgba(201,168,76,0.35); }
+  .ach-row.locked { opacity: 0.45; }
+  .ach-row.locked .ach-icon { filter: grayscale(1); }
+  .ach-icon {
+    font-size: 1.3rem; width: 32px;
+    text-align: center; flex-shrink: 0;
+    color: var(--gold);
+  }
+  .log-entry.achievement { color: var(--gold); }
+
+  /* Achievement Toasts */
+  #achievement-toasts {
+    position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
+    z-index: 300;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    pointer-events: none;
+  }
+  .achievement-toast {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(19,19,26,0.95);
+    border: 1px solid var(--gold-dim);
+    border-radius: 8px;
+    padding: 8px 16px;
+    box-shadow: 0 0 20px rgba(201,168,76,0.2);
+    opacity: 0;
+  }
+  .ach-toast-label {
+    font-size: 0.55rem; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--text-dim);
+  }
+  .ach-toast-name {
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem; font-weight: 700;
+    color: var(--gold);
+  }
+
+  /* Game-over achievements summary */
+  .overlay .new-achievements {
+    margin-bottom: 20px; text-align: center;
+  }
+  .overlay .new-achievements .label {
+    font-size: 0.6rem; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .overlay .new-achievements .name {
+    font-family: 'Cinzel', serif;
+    color: var(--gold); font-size: 0.95rem;
+  }
+  .overlay .overlay-buttons { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
   /* Title */
   #hud-title {
     position: absolute; top: 50%; left: 50%;
@@ -375,6 +461,8 @@
     .deck-value { font-size: 0.9rem; }
     /* Help — beside deck */
     #hud-help { top: 8px; right: 52px; width: 26px; height: 26px; font-size: 0.75rem; }
+    #hud-achievements { top: 8px; right: 84px; width: 26px; height: 26px; font-size: 0.7rem; }
+    #achievement-toasts { top: 100px; }
     /* Room bar — centered below top HUD */
     #hud-room-bar {
       top: auto; bottom: auto;
@@ -435,6 +523,9 @@
   <!-- Help -->
   <button id="hud-help" title="How to Play">?</button>
 
+  <!-- Achievements -->
+  <button id="hud-achievements" title="Achievements">&#x1F3C6;</button>
+
   <!-- Actions -->
   <div id="hud-actions"></div>
 
@@ -445,6 +536,8 @@
 </div>
 
 <div id="overlay-container"></div>
+
+<div id="achievement-toasts"></div>
 
 <div id="hud-title">
   <h1>Scoundrel</h1>
@@ -499,6 +592,160 @@ function cardLabel(c) {
 
 let state = {};
 let showHelp = false;
+let showAchievements = false;
+
+// ─── ACHIEVEMENTS ───
+const ACHIEVEMENT_STORAGE_KEY = 'scoundrel.achievements.v1';
+
+// Each achievement's `test` receives { state, stats, profile, event } and
+// returns true when it should unlock. Events: 'kill', 'potion', 'equip',
+// 'flee', 'room', 'end'.
+const ACHIEVEMENTS = [
+  { id: 'first_blood', icon: '\u2694', name: 'First Blood',
+    desc: 'Slay your first monster.',
+    test: ({ stats }) => stats.monstersSlain >= 1 },
+  { id: 'bare_knuckle', icon: '\u270A', name: 'Bare Knuckle Brawler',
+    desc: 'Slay a monster of value 10 or higher barehanded.',
+    test: ({ event }) => event.type === 'kill' && event.method === 'fist' && event.card.rank >= 10 },
+  { id: 'clean_cut', icon: '\u2666', name: 'Clean Cut',
+    desc: 'Slay a monster with a weapon without taking any damage.',
+    test: ({ event }) => event.type === 'kill' && event.method === 'weapon' && event.dmg === 0 },
+  { id: 'giant_slayer', icon: '\u2660', name: 'Giant Slayer',
+    desc: 'Slay an Ace.',
+    test: ({ event }) => event.type === 'kill' && event.card.rank === 14 },
+  { id: 'weapon_master', icon: '\u2692', name: 'Weapon Master',
+    desc: 'Slay 4 monsters with a single weapon.',
+    test: ({ stats }) => stats.maxKillsOneWeapon >= 4 },
+  { id: 'close_call', icon: '\u2620', name: 'Close Call',
+    desc: 'Survive a fight with exactly 1 HP left.',
+    test: ({ event, state }) => event.type === 'kill' && state.health === 1 },
+  { id: 'alchemist', icon: '\u2665', name: 'Alchemist',
+    desc: 'Drink 5 potions in a single run.',
+    test: ({ stats }) => stats.potionsDrunk >= 5 },
+  { id: 'tactical_retreat', icon: '\u2691', name: 'Tactical Retreat',
+    desc: 'Flee from a room.',
+    test: ({ stats }) => stats.fled >= 1 },
+  { id: 'deep_delver', icon: '\u2193', name: 'Deep Delver',
+    desc: 'Clear 8 rooms in a single run.',
+    test: ({ stats }) => stats.roomsCleared >= 8 },
+  { id: 'scoundrel', icon: '\u2605', name: 'Scoundrel',
+    desc: 'Escape the dungeon alive.',
+    test: ({ event, state }) => event.type === 'end' && state.won },
+  { id: 'unbroken', icon: '\u26E8', name: 'Unbroken',
+    desc: 'Escape the dungeon without ever fleeing a room.',
+    test: ({ event, state, stats }) => event.type === 'end' && state.won && stats.fled === 0 },
+  { id: 'untouchable', icon: '\u2726', name: 'Untouchable',
+    desc: 'Escape the dungeon with full health.',
+    test: ({ event, state }) => event.type === 'end' && state.won && state.health === state.maxHealth },
+  { id: 'veteran', icon: '\u231B', name: 'Veteran',
+    desc: 'Finish 10 runs.',
+    test: ({ profile }) => profile.runs >= 10 },
+  { id: 'champion', icon: '\u265B', name: 'Champion',
+    desc: 'Escape the dungeon 5 times.',
+    test: ({ profile }) => profile.wins >= 5 },
+];
+
+function loadProfile() {
+  const empty = { unlocked: {}, runs: 0, wins: 0 };
+  try {
+    const raw = localStorage.getItem(ACHIEVEMENT_STORAGE_KEY);
+    if (!raw) return empty;
+    const data = JSON.parse(raw);
+    return {
+      unlocked: (data && typeof data.unlocked === 'object' && data.unlocked) || {},
+      runs: Number(data.runs) || 0,
+      wins: Number(data.wins) || 0,
+    };
+  } catch (e) {
+    return empty;
+  }
+}
+
+function saveProfile() {
+  try {
+    localStorage.setItem(ACHIEVEMENT_STORAGE_KEY, JSON.stringify(profile));
+  } catch (e) {
+    // Storage unavailable (private mode, etc.) — achievements last for this session only.
+  }
+}
+
+const profile = loadProfile();
+
+function newRunStats() {
+  return {
+    monstersSlain: 0,
+    barehandedKills: 0,
+    weaponKills: 0,
+    killsWithCurrentWeapon: 0,
+    maxKillsOneWeapon: 0,
+    potionsDrunk: 0,
+    potionsWasted: 0,
+    weaponsEquipped: 0,
+    roomsCleared: 0,
+    fled: 0,
+  };
+}
+
+function evaluateAchievements(event) {
+  if (!state.stats) return;
+  const ctx = { state, stats: state.stats, profile, event };
+  let changed = false;
+  for (const a of ACHIEVEMENTS) {
+    if (profile.unlocked[a.id]) continue;
+    let ok = false;
+    try { ok = a.test(ctx); } catch (e) { ok = false; }
+    if (!ok) continue;
+    profile.unlocked[a.id] = Date.now();
+    state.newAchievements.push(a.id);
+    addLog(`\u{1F3C6} Achievement unlocked: ${a.name}`, 'achievement');
+    showAchievementToast(a);
+    changed = true;
+  }
+  if (changed) saveProfile();
+}
+
+function recordGameEnd() {
+  if (!state.gameOver || state.endRecorded) return;
+  state.endRecorded = true;
+  profile.runs++;
+  if (state.won) profile.wins++;
+  saveProfile();
+  evaluateAchievements({ type: 'end' });
+}
+
+const toastContainer = document.getElementById('achievement-toasts');
+
+function showAchievementToast(a) {
+  if (!toastContainer) return;
+  const el = document.createElement('div');
+  el.className = 'achievement-toast';
+  el.innerHTML = `<span class="ach-icon">${a.icon}</span>
+    <div><div class="ach-toast-label">Achievement Unlocked</div><div class="ach-toast-name">${a.name}</div></div>`;
+  toastContainer.appendChild(el);
+  const delay = (toastContainer.children.length - 1) * 0.25;
+  gsap.fromTo(el, { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.4, delay, ease: 'power2.out' });
+  gsap.to(el, { opacity: 0, y: -12, duration: 0.4, delay: delay + 3.2, ease: 'power2.in', onComplete: () => el.remove() });
+}
+
+function achievementsModalHTML() {
+  const unlockedCount = ACHIEVEMENTS.filter(a => profile.unlocked[a.id]).length;
+  const rows = ACHIEVEMENTS.map(a => {
+    const done = !!profile.unlocked[a.id];
+    return `<div class="ach-row ${done ? 'unlocked' : 'locked'}">
+        <span class="ach-icon">${a.icon}</span>
+        <span class="card-desc"><strong>${a.name}</strong> \u2014 ${a.desc}</span>
+      </div>`;
+  }).join('');
+  return `
+    <div class="help-overlay" onclick="window._toggleAchievements()">
+      <div class="help-modal" onclick="event.stopPropagation()">
+        <h2>Achievements</h2>
+        <p class="ach-progress">${unlockedCount} / ${ACHIEVEMENTS.length} unlocked \u00B7 ${profile.runs} runs \u00B7 ${profile.wins} wins</p>
+        ${rows}
+        <button class="help-close-btn" onclick="window._toggleAchievements()">Close</button>
+      </div>
+    </div>`;
+}
 
 function initGame() {
   const deck = shuffle(makeDeck());
@@ -516,6 +763,9 @@ function initGame() {
     log: [{ text: 'You descend into the dungeon...', cls: 'info' }],
     gameOver: false,
     won: false,
+    stats: newRunStats(),
+    newAchievements: [],
+    endRecorded: false,
   };
   dealRoom();
 }
@@ -571,20 +821,37 @@ function playCard(index, action) {
       state.health = 0;
       state.gameOver = true;
       state.won = false;
+    } else if (action === 'fist' || action === 'weapon') {
+      const st = state.stats;
+      st.monstersSlain++;
+      if (action === 'fist') {
+        st.barehandedKills++;
+      } else {
+        st.weaponKills++;
+        st.killsWithCurrentWeapon++;
+        st.maxKillsOneWeapon = Math.max(st.maxKillsOneWeapon, st.killsWithCurrentWeapon);
+      }
+      evaluateAchievements({ type: 'kill', method: action, card, dmg });
     }
   } else if (type === 'weapon') {
     const oldWeapon = state.weapon;
     state.weapon = card;
     state.weaponLimit = Infinity;
+    state.stats.weaponsEquipped++;
+    state.stats.killsWithCurrentWeapon = 0;
     addLog(`Equipped ${cardLabel(card)}${oldWeapon ? ' (replaced '+cardLabel(oldWeapon)+')' : ''}.`, 'equip');
+    evaluateAchievements({ type: 'equip', card });
   } else if (type === 'potion') {
     if (!state.potionUsedThisRoom) {
       const healed = Math.min(card.rank, state.maxHealth - state.health);
       state.health += healed;
       state.potionUsedThisRoom = true;
+      state.stats.potionsDrunk++;
       addLog(`Drank potion ${cardLabel(card)} \u2014 healed ${healed} HP.`, 'heal');
+      evaluateAchievements({ type: 'potion', card, healed });
     } else {
       addLog(`Discarded ${cardLabel(card)} \u2014 already used a potion this room.`, 'info');
+      state.stats.potionsWasted++;
     }
   }
 
@@ -613,11 +880,14 @@ function playCard(index, action) {
   // Re-index remaining meshes
   cardMeshes.forEach((m, i) => { m.userData.roomIndex = i; });
 
-  if (state.cardsPlayedThisRoom >= 3 && state.room.length <= 1 && !state.gameOver) {
+  // A room is complete once 3 cards are played, or once the dungeon is
+  // exhausted (the final room may hold fewer than 4 cards).
+  const roomComplete = (state.cardsPlayedThisRoom >= 3 && state.room.length <= 1)
+    || (state.deck.length === 0 && state.room.length === 0);
+  if (roomComplete && !state.gameOver) {
     state.lastRanAway = false;
-    if (state.deck.length === 0 && state.room.length <= 1) {
-      // final cards
-    }
+    state.stats.roomsCleared++;
+    evaluateAchievements({ type: 'room' });
     setTimeout(() => {
       dealRoom();
       if (state.room.length === 0) {
@@ -644,6 +914,8 @@ function runAway() {
   }
   state.lastRanAway = true;
   addLog('You fled the room...', 'info');
+  state.stats.fled++;
+  evaluateAchievements({ type: 'flee' });
 
   // Animate all cards out
   cardMeshes.forEach(mesh => {
@@ -1189,6 +1461,9 @@ const ARC_CIRCUMFERENCE = 2 * Math.PI * 17; // ~106.81
 function updateHUD() {
   const s = state;
 
+  // Record run result / end-of-run achievements once
+  recordGameEnd();
+
   // Health wheel
   const healthPct = s.health / s.maxHealth;
   const offset = ARC_CIRCUMFERENCE * (1 - healthPct);
@@ -1277,17 +1552,33 @@ function updateLog() {
 }
 
 function updateOverlays() {
+  let html = '';
   if (state.gameOver) {
-    overlayContainer.innerHTML = `
+    const fresh = (state.newAchievements || [])
+      .map(id => ACHIEVEMENTS.find(a => a.id === id))
+      .filter(Boolean);
+    const freshHtml = fresh.length ? `
+        <div class="new-achievements">
+          <div class="label">New Achievements</div>
+          ${fresh.map(a => `<div class="name">${a.icon} ${a.name}</div>`).join('')}
+        </div>` : '';
+    html += `
       <div class="overlay">
         <h2 style="color: ${state.won ? 'var(--gold)' : 'var(--red)'}">
           ${state.won ? 'Victory' : 'Defeated'}
         </h2>
         <div class="result-msg">${state.won ? `You escaped the dungeon with ${state.health} HP!` : 'The dungeon has claimed another soul.'}</div>
-        <button class="btn" onclick="window._startGame()">Play Again</button>
+        ${freshHtml}
+        <div class="overlay-buttons">
+          <button class="btn" onclick="window._startGame()">Play Again</button>
+          <button class="btn" onclick="window._toggleAchievements()">Achievements</button>
+        </div>
       </div>`;
+  }
+  if (showAchievements) {
+    html += achievementsModalHTML();
   } else if (showHelp) {
-    overlayContainer.innerHTML = `
+    html += `
       <div class="help-overlay" onclick="window._toggleHelp()">
         <div class="help-modal" onclick="event.stopPropagation()">
           <h2>How to Play</h2>
@@ -1317,9 +1608,8 @@ function updateOverlays() {
           <button class="help-close-btn" onclick="window._toggleHelp()">Got It</button>
         </div>
       </div>`;
-  } else {
-    overlayContainer.innerHTML = '';
   }
+  overlayContainer.innerHTML = html;
 }
 
 // ─── EFFECTS ───
@@ -1353,16 +1643,24 @@ window._startGame = function() {
     mesh.material.dispose();
   });
   cardMeshes = [];
+  showAchievements = false;
   initGame();
   syncCards();
   updateHUD();
 };
 window._toggleHelp = function() {
   showHelp = !showHelp;
+  if (showHelp) showAchievements = false;
+  updateOverlays();
+};
+window._toggleAchievements = function() {
+  showAchievements = !showAchievements;
+  if (showAchievements) showHelp = false;
   updateOverlays();
 };
 
 document.getElementById('hud-help').addEventListener('click', window._toggleHelp);
+document.getElementById('hud-achievements').addEventListener('click', window._toggleAchievements);
 document.getElementById('flee-btn').addEventListener('click', window._runAway);
 
 // ─── ANIMATION LOOP ───
